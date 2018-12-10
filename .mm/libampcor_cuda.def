@@ -1,0 +1,43 @@
+# -*- Makefile -*-
+#
+# michael a.g. aïvázis
+# parasim
+# (c) 1998-2018 all rights reserved
+#
+
+
+# add my contributions to the project
+# libraries
+ampcor.libraries += ampcor.cudalib
+# python extensions
+ampcor.extensions += ampcor.cudaext
+# and some tests
+ampcor.tests += ampcor.cudalib.tests
+
+# libampcor_cuda meta-data
+ampcor.cudalib.stem := ampcor_cuda
+ampcor.cudalib.extern := ampcor.lib pyre cuda
+ampcor.cudalib.prerequisites := ampcor.lib
+ampcor.cudalib.c++.flags += $($(compiler.c++).std.c++14)
+ampcor.cudalib.cuda.flags += $(nvcc.std.c++14)
+
+# the ampcor extension meta-data
+ampcor.cudaext.stem := ampcor_cuda
+ampcor.cudaext.pkg := ampcor.pkg
+ampcor.cudaext.wraps := ampcor.cudalib
+ampcor.cudaext.extern := ampcor.cudalib ampcor.lib pyre python cuda
+ampcor.cudaext.lib.prerequisites := ampcor.lib
+# compile options for the sources
+ampcor.cudaext.lib.c++.flags += $($(compiler.c++).std.c++17)
+ampcor.cudaext.lib.cuda.flags += $(nvcc.std.c++14)
+
+# the libampcor_cuda test suite
+ampcor.cudalib.tests.stem := libampcor_cuda
+ampcor.cudalib.tests.prerequisites := ampcor.lib ampcor.cudalib
+ampcor.cudalib.tests.extern := ampcor.lib pyre cuda
+# compile options for the drivers
+ampcor.cudalib.tests.cuda.flags += $(nvcc.std.c++14)
+
+cuda.libraries += cudart cudadevrt
+
+# end of file

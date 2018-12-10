@@ -1,0 +1,38 @@
+# -*- Makefile -*-
+#
+# michael a.g. aïvázis
+# parasim
+# (c) 1998-2018 all rights reserved
+#
+
+# add my contributions to the project
+# libraries
+ampcor.libraries += ampcor.lib
+# python extensions
+ampcor.extensions += ampcor.ext
+# and some tests
+ampcor.tests += ampcor.lib.tests
+
+# libampcor meta-data
+ampcor.lib.stem := ampcor
+ampcor.lib.extern := pyre
+ampcor.lib.c++.flags += $($(compiler.c++).std.c++17)
+
+# the ampcor extension meta-data
+ampcor.ext.stem := ampcor
+ampcor.ext.pkg := ampcor.pkg
+ampcor.ext.wraps := ampcor.lib
+ampcor.ext.extern := ampcor.lib pyre python
+# compile options for the sources
+ampcor.ext.lib.c++.flags += $($(compiler.c++).std.c++17)
+
+# the libampcor test suite
+ampcor.lib.tests.stem := libampcor
+ampcor.lib.tests.prerequisites := ampcor.lib
+ampcor.lib.tests.extern := ampcor.lib pyre
+# compile options for the drivers
+ampcor.lib.tests.c++.flags += $($(compiler.c++).std.c++17)
+ampcor.lib.tests.c++.defines += DEBUG_CHECK_BOUNDS
+
+
+# end of file
