@@ -29,6 +29,14 @@ package = executive.registerPackage(name='ampcor', file=__file__)
 # save the geography
 home, prefix, defaults = package.layout()
 
+# publish local modules
+from . import (
+    meta,         # package meta-data
+    exceptions,   # the exception hierarchy
+    cli,          # the command line interface
+    shells,       # the supported application shells
+)
+
 
 # administrivia
 def copyright():

@@ -12,7 +12,7 @@
 import ampcor
 
 # build an instance of the plexus
-app = ampcor.plexus(name='ampcor.plexus')
+app = ampcor.shells.plexus(name='ampcor.plexus')
 # and run it
 status = app.run()
 # pass the status on to the shell
