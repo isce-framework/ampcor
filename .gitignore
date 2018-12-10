@@ -1,0 +1,9 @@
+/products
+/builds
+*~
+*.i
+*.ii
+*.gpu
+*.ptx
+*.cubin
+*.fatbin
