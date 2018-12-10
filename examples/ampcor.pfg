@@ -1,0 +1,57 @@
+;
+; michael a.g. aïvázis
+; orthologue
+; (c) 1998-2018 all rights reserved
+;
+
+
+; overall application configuration
+ampcor.plexus:
+
+    ; machine layout
+    shell:
+        hosts = 1 ; number of hosts
+        tasks = 1 ; number of tasks per host
+        gpus = 0  ; number of gpus per task
+
+
+; configuration for the offset estimator action
+ampcor.plexus.offsets:
+
+    ; reference image type
+    reference = slc
+    ; reference image configuration
+    ampcor.dom.rasters.slc # reference:
+        ; pfs path to the data file
+        data = ../data/20061231.slc
+        ; shape
+        shape = 36864,10344
+
+    ; target image
+    target = slc
+    ; reference image configuration
+    ampcor.dom.rasters.slc # target:
+        ; pfs path to the data file
+        data = ../data/20070215.slc
+        ; shape
+        shape = 36864,10344
+
+    ; estimated offsets field
+    offsets = raster
+    ; output image configuration
+    offsets:
+        ; pfs path to the output file
+        data = ../data/offsets.off
+
+    ; offset estimator
+    estimator = mga
+
+    ; {mga} estimator configuration
+    ampcor.correlators.mga # estimator:
+        ; the search window size in the reference image
+        chip = 128, 128
+        ; the search plan, in terms of a grid of search windows
+        grid = 120, 40
+
+
+; end of file
