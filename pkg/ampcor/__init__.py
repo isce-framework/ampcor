@@ -33,6 +33,7 @@ home, prefix, defaults = package.layout()
 from . import (
     meta,         # package meta-data
     exceptions,   # the exception hierarchy
+    dom,          # the data model
     cli,          # the command line interface
     shells,       # the supported application shells
 )
