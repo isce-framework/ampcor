@@ -9,7 +9,7 @@
 # the framework
 import ampcor
 # the extension
-libampcor = ampcor.ext.libampcor
+from ampcor.ext import ampcor as libampcor
 # my protocol
 from .Raster import Raster
 

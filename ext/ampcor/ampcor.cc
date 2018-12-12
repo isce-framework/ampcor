@@ -11,6 +11,7 @@
 // the module method declarations
 #include "exceptions.h"
 #include "metadata.h"
+#include "slc.h"
 
 
 // put everything in my private namespace
@@ -23,6 +24,18 @@ namespace ampcor {
             { copyright__name__, copyright, METH_VARARGS, copyright__doc__ },
             // the version
             { version__name__, version, METH_VARARGS, version__doc__ },
+
+            // slc support
+            // pixel size
+            { slc::pixelSize__name__, slc::pixelSize, METH_NOARGS, slc::pixelSize__doc__},
+            // memory map over an existing file
+            { slc::map__name__,
+              reinterpret_cast<PyCFunction>(slc::map), METH_VARARGS | METH_KEYWORDS,
+              slc::map__doc__},
+            // fetch data given an index pair
+            { slc::atIndex__name__, slc::atIndex, METH_VARARGS, slc::atIndex__doc__},
+            // fetch data at a given offset
+            { slc::atOffset__name__, slc::atOffset, METH_VARARGS, slc::atOffset__doc__},
 
             // sentinel
             { 0, 0, 0, 0 }
