@@ -11,6 +11,7 @@
 from .. import foundry
 
 # protocols
+from .Correlator import Correlator as correlator
 from .Scanner import Scanner as scanner
 
 
@@ -23,6 +24,16 @@ def uniform():
     __doc__ = UniformGrid.__doc__
     # and publish it
     return UniformGrid
+
+
+@foundry(implements=correlator, tip="estimate an offset field using MGA's implementation")
+def mga():
+    # get the action
+    from .MGA import MGA
+    # borrow its doctsring
+    __doc__ = MGA.__doc__
+    # and publish it
+    return MGA
 
 
 # end of file
