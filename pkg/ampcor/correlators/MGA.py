@@ -19,6 +19,16 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
     MGA's implementation of the offset field estimator
     """
 
+
+    # user configurable state
+    scanner = ampcor.correlators.scanner()
+    scanner.doc = "the generator of points on the reference image"
+
+
+    # types
+    from .Plan import Plan as newPlan
+
+
     # protocol obligations
     @ampcor.provides
     def estimate(self, plexus, reference, target, **kwds):
@@ -27,6 +37,29 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         """
         # all done
         return 0
+
+
+    # interface
+    def makePlan(self, reference, target):
+        """
+        Formulate a computational plan for correlating {reference} and {target} to produce an
+        offset map
+        """
+        # make a plan
+        plan = self.newPlan()
+        # and return it
+        return plan
+
+
+    def show(self, channel):
+        """
+        Display my configuration and details about the correlation plan
+        """
+        # show who i am
+        channel.line(f" -- estimator: {self}")
+
+        # all done
+        return self
 
 
 # end of file

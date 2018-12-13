@@ -77,10 +77,10 @@ class Offsets(ampcor.cli.command, family="ampcor.cli.offsets"):
             channel.line(f"        shape: {self.target.shape}")
             channel.line(f"        size: {self.target.size()} bytes")
 
-        # show the estimator configuration
-        self.estimator.show(channel=channel)
+        # show the correlator configuration
+        self.correlator.show(channel=channel)
         # ask it to make a plan
-        plan = self.estimator.makePlan(reference=self.reference, target=self.target)
+        plan = self.correlator.makePlan(reference=self.reference, target=self.target)
         # and show the plan details
         plan.show(channel=channel)
 
