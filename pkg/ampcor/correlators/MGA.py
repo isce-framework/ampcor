@@ -21,8 +21,8 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
 
 
     # user configurable state
-    scanner = ampcor.correlators.scanner()
-    scanner.doc = "the generator of points on the reference image"
+    domain = ampcor.correlators.domain()
+    domain.doc = "the generator of points on the reference image"
 
 
     # types

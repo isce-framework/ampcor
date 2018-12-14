@@ -12,11 +12,11 @@ from .. import foundry
 
 # protocols
 from .Correlator import Correlator as correlator
-from .Scanner import Scanner as scanner
+from .Domain import Domain as domain
 
 
-# scanners
-@foundry(implements=scanner, tip="generate a uniform grid of reference points")
+# domain generators
+@foundry(implements=domain, tip="generate a uniform grid of reference points")
 def uniform():
     # get the action
     from .UniformGrid import UniformGrid

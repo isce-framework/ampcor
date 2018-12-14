@@ -12,7 +12,7 @@ import ampcor
 
 
 # declaration
-class Scanner(ampcor.protocol, family="ampcor.correlators.scanners"):
+class Domain(ampcor.protocol, family="ampcor.correlators.domains"):
     """
     The protocol that must be satisfied by all components that generate collections of
     reference tiles
@@ -21,17 +21,18 @@ class Scanner(ampcor.protocol, family="ampcor.correlators.scanners"):
 
     # requirements
     @ampcor.provides
-    def scan(self, raster, **kwds):
+    def points(self, raster, **kwds):
         """
         Generate a cloud of points over {raster} where reference tiles will be placed
         """
+
 
     # hooks
     def pyre_default(self, **kwds):
         """
         Provide a default implementation
         """
-        # pull the uniform grid scanner
+        # pull the uniform grid generator
         from .UniformGrid import UniformGrid
         # and publish it
         return UniformGrid

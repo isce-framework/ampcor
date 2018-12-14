@@ -10,14 +10,14 @@
 # framework
 import ampcor
 # my protocol
-from .Scanner import Scanner as scanner
+from .Domain import Domain as domain
 
 
 # declaration
 class UniformGrid(ampcor.component,
-                  family="ampcor.correlators.scanners.uniform", implements=scanner):
+                  family="ampcor.correlators.domains.uniform", implements=domain):
     """
-    A scanner that places reference tiles on a uniform grid
+    A domain that generates domain points on a uniform grid
     """
 
 
@@ -29,7 +29,7 @@ class UniformGrid(ampcor.component,
 
     # protocol requirements
     @empcor.export
-    def scan(self, raster, **kwds):
+    def points(self, raster, **kwds):
         """
         Generate a uniform grid of points over {raster}
         """
