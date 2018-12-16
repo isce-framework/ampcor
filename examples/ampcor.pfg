@@ -20,7 +20,7 @@ ampcor.plexus.offsets:
 
     ; reference image type
     reference = slc
-    ; reference image configuration
+    ; if the reference image is an SLC
     ampcor.dom.rasters.slc # reference:
         ; pfs path to the data file
         data = ../data/20061231.slc
@@ -29,29 +29,26 @@ ampcor.plexus.offsets:
 
     ; target image
     target = slc
-    ; reference image configuration
+    ; if the target image is an SLC
     ampcor.dom.rasters.slc # target:
         ; pfs path to the data file
         data = ../data/20070215.slc
         ; shape
         shape = 36864,10344
 
-    ; estimated offsets field
-    offsets = raster
-    ; output image configuration
-    offsets:
-        ; pfs path to the output file
-        data = ../data/offsets.off
+    ; correlator
+    correlator = mga
+    ; if the correlator is {mga}
+    ampcor.correlators.mga # correlator:
+        ; the generator of the initial guess
+        coarse = grid
 
-    ; offset estimator
-    estimator = mga
-
-    ; {mga} estimator configuration
-    ampcor.correlators.mga # estimator:
-        ; the search window size in the reference image
-        chip = 128, 128
-        ; the search plan, in terms of a grid of search windows
-        grid = 120, 40
+        ; if the initial guess generator is a {grid}
+        ampcor.correlators.offsets.grid # coarse:
+            ; configure its domain
+            domain:
+                ; generate a 120x40 grid of tiles over the reference raster
+                shape = 120, 40
 
 
 ; end of file
