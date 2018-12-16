@@ -13,14 +13,24 @@ from .Raster import Raster as raster
 
 
 # data product factories
-def newSLC():
+def newOffsetMap(**kwds):
+    """
+    Create a new offset map
+    """
+    # get the factory
+    from .OffsetMap import OffsetMap
+    # instantiate and return it
+    return OffsetMap(**kwds)
+
+
+def newSLC(**kwds):
     """
     Create an SLC raster object in its default configuration
     """
     # get the component
     from .SLC import SLC
     # instantiate and return it
-    return SLC()
+    return SLC(**kwds)
 
 
 # data product foundries; these get used by the framework during component binding
