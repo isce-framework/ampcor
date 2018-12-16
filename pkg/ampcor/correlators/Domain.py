@@ -28,6 +28,7 @@ class Domain(ampcor.protocol, family="ampcor.correlators.domains"):
 
 
     # hooks
+    @classmethod
     def pyre_default(self, **kwds):
         """
         Provide a default implementation

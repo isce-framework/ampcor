@@ -28,11 +28,23 @@ class UniformGrid(ampcor.component,
 
 
     # protocol requirements
-    @empcor.export
+    @ampcor.export
     def points(self, raster, **kwds):
         """
         Generate a uniform grid of points over {raster}
         """
+        # all done
+        return
+
+
+    # interface
+    def show(self, channel):
+        """
+        Display my configuration
+        """
+        # show who i am
+        channel.line(f" -- domain: {self.pyre_family()}")
+        channel.line(f" --     shape: {self.shape}")
         # all done
         return
 

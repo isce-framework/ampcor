@@ -21,8 +21,8 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
 
 
     # user configurable state
-    domain = ampcor.correlators.domain()
-    domain.doc = "the generator of points on the reference image"
+    coarse = ampcor.correlators.offsets()
+    coarse.doc = "the initial guess for the offset map"
 
 
     # types
@@ -56,7 +56,9 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         Display my configuration and details about the correlation plan
         """
         # show who i am
-        channel.line(f" -- estimator: {self}")
+        channel.line(f" -- estimator: {self.pyre_family()}")
+        # describe my coarse map strategy
+        self.coarse.show(channel=channel)
 
         # all done
         return self
