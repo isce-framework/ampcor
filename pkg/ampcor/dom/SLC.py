@@ -32,6 +32,7 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
 
     # user configurable state
     shape = ampcor.properties.tuple(schema=ampcor.properties.int())
+    shape.default = (1,1)
     shape.doc = "the shape of the raster: lines x samples"
 
     data = ampcor.properties.path()
