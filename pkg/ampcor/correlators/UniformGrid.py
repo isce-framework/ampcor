@@ -44,7 +44,7 @@ class UniformGrid(ampcor.component,
         """
         # show who i am
         channel.line(f" -- domain: {self.pyre_family()}")
-        channel.line(f" --     shape: {self.shape}")
+        channel.line(f"        shape: {self.shape}")
         # all done
         return
 

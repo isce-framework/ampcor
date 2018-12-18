@@ -24,7 +24,8 @@ class Grid(ampcor.component, family="ampcor.correlators.offsets.grid", implement
     domain = ampcor.correlators.domain()
     domain.doc = "the domain of the map"
 
-
+    functor = ampcor.correlators.functor()
+    functor.doc = "the function that maps points from the reference raster to the target raster"
 
 
     # requirements
@@ -44,6 +45,8 @@ class Grid(ampcor.component, family="ampcor.correlators.offsets.grid", implement
         channel.line(f" -- offsets: {self.pyre_family()}")
         # show my domain
         self.domain.show(channel=channel)
+        # and my codomain generator
+        self.functor.show(channel=channel)
         # all done
         return
 
