@@ -34,11 +34,11 @@ class OffsetMap:
         Return the index packing order
         """
         # easy enough
-        self.tile.layout
+        return self.tile.layout
 
 
     # meta-methods
-    def __init__(self, shape, laoyout=None, **kwds):
+    def __init__(self, shape, layout=None, **kwds):
         # chain up
         super().__init__(**kwds)
         # storage
