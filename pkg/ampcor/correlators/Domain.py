@@ -21,9 +21,9 @@ class Domain(ampcor.protocol, family="ampcor.correlators.domains"):
 
     # requirements
     @ampcor.provides
-    def points(self, raster, **kwds):
+    def points(self, bounds, **kwds):
         """
-        Generate a cloud of points over {raster} where reference tiles will be placed
+        Generate a cloud of points within {bounds} where reference tiles will be placed
         """
 
 

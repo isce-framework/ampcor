@@ -35,6 +35,15 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         """
         Estimate the offset field between a pair of raster images
         """
+        # make a plan
+        plan = self.makePlan(reference, target)
+        # make a channel
+        channel = plexus.info
+
+        # show me
+        channel.log(f"correlator: {self.pyre_family()}")
+        channel.log(f"plan: {plan}")
+
         # all done
         return 0
 
@@ -45,8 +54,15 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         Formulate a computational plan for correlating {reference} and {target} to produce an
         offset map
         """
+        # form the coarse map
+        coarse = self.coarse.map(reference=reference)
         # make a plan
         plan = self.newPlan()
+        # build the pairs of tile to correlate
+        plan.assemble()
+        # exclude pairs whose tiles overflow their respective rasters
+        plan.validate()
+
         # and return it
         return plan
 

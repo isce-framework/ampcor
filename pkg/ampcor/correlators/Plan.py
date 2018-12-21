@@ -19,13 +19,19 @@ class Plan:
     """
 
     # interface
+    def assemble(self):
+        """
+        Put together the set of pairs of tiles to correlate
+        """
+        raise NotImplementedError("ampcor.correlators.Plan.assemble: NYI!")
+
+
     def show(self, channel):
         """
         Display details about this plan in {channel}
         """
         # sign on
         channel.line(f" -- plan:")
-
         # all done
         return
 

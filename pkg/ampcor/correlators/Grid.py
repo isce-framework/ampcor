@@ -30,10 +30,27 @@ class Grid(ampcor.component, family="ampcor.correlators.offsets.grid", implement
 
     # requirements
     @ampcor.export
-    def map(self, **kwds):
+    def map(self, reference, **kwds):
         """
         Build an offset map between {reference} and {target}
         """
+        # get my domain
+        domain = self.domain
+        # and the functor that generates the codomain
+        functor = self.functor
+
+        # make a map
+        offmap = ampcor.dom.newOffsetMap(shape=domain.shape)
+        # generate the reference points and attach the domain
+        offmap.domain = tuple(domain.points(bounds=reference.shape))
+        # invoke the map to generate the corresponding points on the target image
+        offmap.codomain = tuple(functor.codomain(domain=offmap.domain))
+
+        print(f"offset map: {offmap}")
+        raise NotImplementedError("ampcor.correlators.Grid.map: NYI!")
+
+        # all done
+        return offmap
 
 
     # interface

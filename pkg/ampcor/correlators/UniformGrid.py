@@ -29,10 +29,11 @@ class UniformGrid(ampcor.component,
 
     # protocol requirements
     @ampcor.export
-    def points(self, raster, **kwds):
+    def points(self, bounds, **kwds):
         """
-        Generate a uniform grid of points over {raster}
+        Generate a cloud of points within {extent} where reference tiles will be placed
         """
+        print(f"ampcor.correlators.UniformGrid.points: bounds={bounds}")
         # all done
         return
 
