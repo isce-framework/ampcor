@@ -33,7 +33,23 @@ class UniformGrid(ampcor.component,
         """
         Generate a cloud of points within {extent} where reference tiles will be placed
         """
-        print(f"ampcor.correlators.UniformGrid.points: bounds={bounds}")
+        # get my shape
+        shape = self.shape
+        # split {bounds} into evenly spaced swaths
+        swaths = tuple(b//s for b,s in zip(bounds, shape))
+        # compute the unallocated border around the raster
+        margin = tuple(b%s for b,s in zip(bounds, shape))
+
+
+
+
+        print(f"ampcor.correlators.UniformGrid.points:")
+        print(f"   grid={shape}")
+        print(f"   bounds={bounds}")
+        print(f"   swaths={swaths}")
+        print(f"   margin={margin}")
+
+        raise SystemExit(0)
         # all done
         return
 

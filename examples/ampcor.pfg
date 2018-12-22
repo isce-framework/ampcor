@@ -48,7 +48,7 @@ ampcor.plexus.offsets:
             ; if the domain is a uniform grid
             ampcor.correlators.domains.uniform # domain:
                 ; generate a 120x40 grid of tiles over the reference raster
-                shape = 120, 60
+                shape = 140, 40
             ; if the functor is a constant shift
             ampcor.correlators.functors.constant # functor:
                 ; generate a 120x40 grid of tiles over the reference raster
