@@ -7,6 +7,8 @@
 #
 
 
+# externals
+import itertools
 # framework
 import ampcor
 # my protocol
@@ -38,17 +40,12 @@ class Grid(ampcor.component, family="ampcor.correlators.offsets.grid", implement
         domain = self.domain
         # and the functor that generates the codomain
         functor = self.functor
-
         # make a map
         offmap = ampcor.dom.newOffsetMap(shape=domain.shape)
-        # generate the reference points and attach the domain
+        # generate the reference points and attach them as the domain of the offset map
         offmap.domain = tuple(domain.points(bounds=reference.shape))
         # invoke the map to generate the corresponding points on the target image
         offmap.codomain = tuple(functor.codomain(domain=offmap.domain))
-
-        print(f"offset map: {offmap}")
-        raise NotImplementedError("ampcor.correlators.Grid.map: NYI!")
-
         # all done
         return offmap
 

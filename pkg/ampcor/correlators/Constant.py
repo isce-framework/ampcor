@@ -33,6 +33,8 @@ class Constant(ampcor.component,
         """
         Given {reference} points in {domain}, generate their images in {target}
         """
+        # grab my {shift}
+        shift = self.shift
         # go through the points
         for point in domain:
             # apply the shift and yield the poit

@@ -7,6 +7,8 @@
 #
 
 
+# externals
+import itertools
 # framework
 import ampcor
 # my protocol
@@ -35,23 +37,22 @@ class UniformGrid(ampcor.component,
         """
         # get my shape
         shape = self.shape
-        # split {bounds} into evenly spaced swaths
-        swaths = tuple(b//s for b,s in zip(bounds, shape))
+        # split {bounds} into evenly spaced tiles
+        tile = tuple(b//s for b,s in zip(bounds, shape))
         # compute the unallocated border around the raster
         margin = tuple(b%s for b,s in zip(bounds, shape))
+        # build the sequences of coordinates for tile centers along each axis
+        ticks = tuple(
+            # by generating the locations
+            tuple(m//2 + n*t + t//2 for n in range(g))
+            # given the layout of each axis
+            for g, m, t in zip(shape, margin, tile)
+        )
+        # their cartesian product generates the centers of all the tiles in the grid
+        centers = tuple(itertools.product(*ticks))
 
-
-
-
-        print(f"ampcor.correlators.UniformGrid.points:")
-        print(f"   grid={shape}")
-        print(f"   bounds={bounds}")
-        print(f"   swaths={swaths}")
-        print(f"   margin={margin}")
-
-        raise SystemExit(0)
         # all done
-        return
+        return centers
 
 
     # interface
