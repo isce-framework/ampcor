@@ -29,6 +29,15 @@ class OffsetMap:
 
 
     @property
+    def shape(self):
+        """
+        Return the shape of the map
+        """
+        # easy enough
+        return self.tile.shape
+
+
+    @property
     def layout(self):
         """
         Return the index packing order
