@@ -56,7 +56,20 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
         """
         Grant access to a slice of my data bound by the index pair {begin} and {end}
         """
-        # return the slice
+        # go through the index that describes the beginning of the slice
+        for b in begin:
+            # if any of them are negative
+            if b < 0:
+                # indicate that this is an invalid slice
+                return None
+        # make sure the indices in {end} don't overflow
+        for e, s in zip(end, self.shape):
+            # if any of them do
+            if e >= s:
+                # indicate this is an invalid slice
+                return None
+
+        # if all goes well, make a slice and return it
         return self.sliceFactory(raster=self, begin=begin, end=end)
 
 
@@ -74,21 +87,23 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
 
 
     # meta-methods
+    def __init__(self, **kwds):
+        # chain up
+        super().__init__(**kwds)
+        # make a tile out of my shape
+        self.tile = ampcor.grid.tile(shape=self.shape)
+        # all done
+        return
+
+
     def __getitem__(self, index):
         """
         Fetch data at the given index
         """
-        # attempt to
-        try:
-            # to convert the {index} into an int
-            index = int(index)
-        # If this fails
-        except TypeError:
-            # hand it to the binding that retrieves data using tuples as indices
-            return libampcor.slc_atIndex(self.slc, *index)
-
-        # if successful, the {index} is an offset
-        return libampcor.slc_atOffset(self.slc, int(index))
+        # convert {index} into an offset
+        offset = self.tile.offset(index)
+        # grab the data and return it
+        return libampcor.slc_getitem(self.slc, index)
 
 
     # implementation details
