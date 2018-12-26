@@ -51,6 +51,26 @@ class Plan:
         # tile info
         channel.line(f"        shape: {self.tile.shape}, layout: {self.tile.layout}")
         channel.line(f"        pairs: {len(self)} out of {self.tile.size}")
+
+        # go through the pairs
+        for offset, (ref,tgt) in enumerate(zip(self.reference, self.target)):
+            # compute the index of this pair
+            index = self.tile.index(offset)
+            # if this is a valid pair
+            if ref and tgt:
+                # identify the pair
+                channel.line(f"        pair: {index}")
+                # show me the reference slice
+                channel.line(f"            ref:")
+                ref.show(channel)
+                # and the target slice
+                channel.line(f"            tgt:")
+                tgt.show(channel)
+            # otherwise
+            else:
+                # identify the pair as invalid
+                channel.line(f"        pair: {index} INVALID")
+
         # all done
         return
 
@@ -110,17 +130,15 @@ class Plan:
         for ref, tgt in zip(offsets.domain, offsets.codomain):
             # form the upper left hand corner of the reference tile
             begin = tuple(r - c//2 for r,c in zip(ref, chip))
-            # and its range
-            end = tuple(b + c for b,c in zip(begin, chip))
             # attempt to make a slice; invalid specs get rejected by the slice factory
-            refSlice = reference.slice(begin=begin, end=end)
+            refSlice = reference.slice(begin=begin, shape=chip)
 
             # the upper left hand corner of the target tile
             begin = tuple(t - c//2 - p for t,c,p in zip(tgt, chip, padding))
-            # and its range
-            end = tuple(b + c + p for b,c,p in zip(begin, chip, padding))
+            # and its shape
+            shape = tuple(c + p for c,p in zip(chip, padding))
             # try to turn this into a slice
-            tgtSlice = target.slice(begin=begin, end=end)
+            tgtSlice = target.slice(begin=begin, shape=shape)
 
             # if both slices are valid
             if refSlice and tgtSlice:

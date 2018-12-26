@@ -52,7 +52,7 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
 
 
     @ampcor.export
-    def slice(self, begin, end):
+    def slice(self, begin, shape):
         """
         Grant access to a slice of my data bound by the index pair {begin} and {end}
         """
@@ -66,14 +66,14 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
                 # indicate that this is an invalid slice
                 return None
         # make sure the indices in {end} don't overflow
-        for e, s in zip(end, self.shape):
+        for b, s, l in zip(begin, shape, self.shape):
             # if any of them do
-            if e > s:
+            if b+s > s:
                 # indicate this is an invalid slice
                 return None
 
         # if all goes well, make a slice and return it
-        return self.sliceFactory(raster=self, begin=begin, end=end)
+        return self.sliceFactory(raster=self, begin=begin, shape=shape)
 
 
     @ampcor.export
