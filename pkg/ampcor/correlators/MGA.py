@@ -24,6 +24,15 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
     coarse = ampcor.correlators.offsets()
     coarse.doc = "the initial guess for the offset map"
 
+    # control over the correlation plan
+    chip = ampcor.properties.tuple(schema=ampcor.properties.int())
+    chip.default = 128, 128
+    chip.doc = "the shape of the reference chip"
+
+    padding = ampcor.properties.tuple(schema=ampcor.properties.int())
+    padding.default = 32, 32
+    padding.doc = "padding around the chip shape to form the search window in the target raster"
+
 
     # types
     from .Plan import Plan as newPlan
@@ -57,12 +66,7 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         # form the coarse map
         coarse = self.coarse.map(reference=reference)
         # make a plan
-        plan = self.newPlan()
-        # build the pairs of tile to correlate
-        plan.assemble()
-        # exclude pairs whose tiles overflow their respective rasters
-        plan.validate()
-
+        plan = self.newPlan(correlator=self, offsets=coarse, rasters=(reference, target))
         # and return it
         return plan
 
@@ -73,6 +77,10 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         """
         # show who i am
         channel.line(f" -- estimator: {self.pyre_family()}")
+        # display the reference chip size
+        channel.line(f"        chip: {self.chip}")
+        # and the search window padding
+        channel.line(f"        padding: {self.padding}")
         # describe my coarse map strategy
         self.coarse.show(channel=channel)
 

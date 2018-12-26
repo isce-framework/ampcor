@@ -50,7 +50,6 @@ class UniformGrid(ampcor.component,
         )
         # their cartesian product generates the centers of all the tiles in the grid
         centers = tuple(itertools.product(*ticks))
-
         # all done
         return centers
 
