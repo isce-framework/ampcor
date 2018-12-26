@@ -32,10 +32,8 @@ namespace ampcor {
             { slc::map__name__,
               reinterpret_cast<PyCFunction>(slc::map), METH_VARARGS | METH_KEYWORDS,
               slc::map__doc__},
-            // fetch data given an index pair
-            { slc::atIndex__name__, slc::atIndex, METH_VARARGS, slc::atIndex__doc__},
             // fetch data at a given offset
-            { slc::atOffset__name__, slc::atOffset, METH_VARARGS, slc::atOffset__doc__},
+            { slc::getitem__name__, slc::getitem, METH_VARARGS, slc::getitem__doc__},
 
             // sentinel
             { 0, 0, 0, 0 }

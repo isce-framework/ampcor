@@ -24,15 +24,10 @@ namespace ampcor {
             extern const char * const map__doc__;
             PyObject * map(PyObject *self, PyObject *args, PyObject *kwds);
 
-            // fetch data at index
-            extern const char * const atIndex__name__;
-            extern const char * const atIndex__doc__;
-            PyObject * atIndex(PyObject *self, PyObject *args);
-
             // fetch data at offset
-            extern const char * const atOffset__name__;
-            extern const char * const atOffset__doc__;
-            PyObject * atOffset(PyObject *self, PyObject *args);
+            extern const char * const getitem__name__;
+            extern const char * const getitem__doc__;
+            PyObject * getitem(PyObject *self, PyObject *args);
 
         } // of namespace slc`
     } // of namespace extension`

@@ -93,65 +93,18 @@ map(PyObject *, PyObject *args, PyObject *kwds)
 }
 
 
-// fetch data at the given index
-const char * const
-ampcor::extension::slc::
-atIndex__name__ = "slc_atIndex";
-
-const char * const
-ampcor::extension::slc::
-atIndex__doc__ = "fetch the data at the given index";
-
-PyObject *
-ampcor::extension::slc::
-atIndex(PyObject *, PyObject *args)
-{
-    // storage for the indices
-    size_t i, j;
-    // storage for the capsule
-    PyObject * capsule;
-
-    // attempt to parse the arguments
-    int ok = PyArg_ParseTuple(args,
-                              "O!kk:slc_atIndex",
-                              &PyCapsule_Type, &capsule, &i, &j);
-    // if something went wrong
-    if (!ok) {
-        // complain
-        return nullptr;
-    }
-
-    // check the capsule
-    if (!PyCapsule_IsValid(capsule, capsule_t)) {
-        // give a reason
-        PyErr_SetString(PyExc_TypeError, "invalid SLC capsule");
-        // and bail
-        return nullptr;
-    }
-
-    // unpack the capsule
-    const ampcor::dom::slc_t & slc =
-        *reinterpret_cast<const ampcor::dom::slc_t *>(PyCapsule_GetPointer(capsule, capsule_t));
-    // get the data
-    auto value = slc[{i, j}];
-
-    // dress it up and return it
-    return PyComplex_FromDoubles(value.real(), value.imag());
-}
-
-
 // fetch data at the given offset
 const char * const
 ampcor::extension::slc::
-atOffset__name__ = "slc_atOffset";
+getitem__name__ = "slc_getitem";
 
 const char * const
 ampcor::extension::slc::
-atOffset__doc__ = "fetch the data at the given offset";
+getitem__doc__ = "fetch the data at the given offset";
 
 PyObject *
 ampcor::extension::slc::
-atOffset(PyObject *, PyObject *args)
+getitem(PyObject *, PyObject *args)
 {
     // storage for the offset
     size_t offset;
@@ -160,7 +113,7 @@ atOffset(PyObject *, PyObject *args)
 
     // attempt to parse the arguments
     int ok = PyArg_ParseTuple(args,
-                              "O!k:slc_atOffset",
+                              "O!k:slc_getitem",
                               &PyCapsule_Type, &capsule, &offset);
     // if something went wrong
     if (!ok) {
