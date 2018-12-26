@@ -68,7 +68,7 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
         # make sure the indices in {end} don't overflow
         for b, s, l in zip(begin, shape, self.shape):
             # if any of them do
-            if b+s > s:
+            if b+s > l:
                 # indicate this is an invalid slice
                 return None
 
