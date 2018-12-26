@@ -56,6 +56,9 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
         """
         Grant access to a slice of my data bound by the index pair {begin} and {end}
         """
+        # N.B.: {end} follows the one-past-the-end of the range convention, just like {range}
+        # this means that overflow doesn't happen unless {end} > {self.shape}
+
         # go through the index that describes the beginning of the slice
         for b in begin:
             # if any of them are negative
@@ -65,7 +68,7 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
         # make sure the indices in {end} don't overflow
         for e, s in zip(end, self.shape):
             # if any of them do
-            if e >= s:
+            if e > s:
                 # indicate this is an invalid slice
                 return None
 
