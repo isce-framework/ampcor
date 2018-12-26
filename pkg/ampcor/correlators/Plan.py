@@ -27,7 +27,7 @@ class Plan:
     target = None    # the sequence of target search windows
 
 
-    # interface
+    @property
     def pairs(self):
         """
         Yield valid pairs of reference and target tiles
@@ -42,6 +42,20 @@ class Plan:
         return
 
 
+    @property
+    def footprint(self):
+        """
+        Compute the total amount of memory required to store the reference and target tiles
+        """
+        # the reference footprint
+        ref = sum(tile.footprint for tile in filter(None, self.reference))
+        # the target footprint
+        tgt = sum(tile.footprint for tile in filter(None, self.target))
+        # all done
+        return ref, tgt
+
+
+    # interface
     def show(self, channel):
         """
         Display details about this plan in {channel}
@@ -51,6 +65,11 @@ class Plan:
         # tile info
         channel.line(f"        shape: {self.tile.shape}, layout: {self.tile.layout}")
         channel.line(f"        pairs: {len(self)} out of {self.tile.size}")
+        # memory footprint
+        refFootprint, tgtFootprint = self.footprint
+        channel.line(f"        footprint:")
+        channel.line(f"            reference: {refFootprint} bytes")
+        channel.line(f"               target: {tgtFootprint} bytes")
 
         # go through the pairs
         for offset, (ref,tgt) in enumerate(zip(self.reference, self.target)):
