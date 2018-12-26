@@ -63,18 +63,11 @@ class OffsetMap:
         """
         Return the pair of correlated points stored at {index}
         """
-        # attempt to
-        try:
-            # cast {index} to an integer
-            index = int(index)
-        # if this fails
-        except TypeError:
-            # ask my tile for the offset
-            index = self.tile.offset(index)
-
-        # in any case, pull the corresponding points
-        ref = self.domain[index]
-        tgt = self.codomain[index]
+        # ask my tile for the offset
+        offset = self.tile.offset(index)
+        # pull the corresponding points
+        ref = self.domain[offset]
+        tgt = self.codomain[offset]
         # and return them
         return (ref, tgt)
 
@@ -83,21 +76,13 @@ class OffsetMap:
         """
         Return the value stored at {index}
         """
-        # attempt to
-        try:
-            # cast {index} to an integer
-            index = int(index)
-        # if this fails
-        except TypeError:
-            # let my tile do the work
-            index = self.tile.offset(index)
-
+        # ask my tile for the offset
+        offset = self.tile.offset(index)
         # unpack the points
         ref, tgt = points
         # store them
-        self.domain[index] = ref
-        self.codomain[index] = tgt
-
+        self.domain[offset] = ref
+        self.codomain[offset] = tgt
         # all done
         return
 
