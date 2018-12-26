@@ -136,7 +136,7 @@ class Plan:
             # the upper left hand corner of the target tile
             begin = tuple(t - c//2 - p for t,c,p in zip(tgt, chip, padding))
             # and its shape
-            shape = tuple(c + p for c,p in zip(chip, padding))
+            shape = tuple(c + 2*p for c,p in zip(chip, padding))
             # try to turn this into a slice
             tgtSlice = target.slice(begin=begin, shape=shape)
 
