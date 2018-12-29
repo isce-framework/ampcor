@@ -84,7 +84,7 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
         # unpack my shape
         lines, samples = self.shape
         # build an SLC raster image over the contents of {filename}
-        self.slc = libampcor.slc_map(filename=self.data.path, lines=lines, samples=samples)
+        self.raster = libampcor.slc_map(filename=self.data.path, lines=lines, samples=samples)
         # all done
         return self
 
@@ -106,12 +106,12 @@ class SLC(ampcor.component, family="ampcor.dom.rasters.slc", implements=Raster):
         # convert {index} into an offset
         offset = self.tile.offset(index)
         # grab the data and return it
-        return libampcor.slc_getitem(self.slc, index)
+        return libampcor.slc_getitem(self.raster, index)
 
 
     # implementation details
     # private data
-    slc = None
+    raster = None
 
 
 # end of file
