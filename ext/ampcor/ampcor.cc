@@ -11,6 +11,7 @@
 // the module method declarations
 #include "exceptions.h"
 #include "metadata.h"
+#include "sequential.h"
 #include "slc.h"
 
 
@@ -24,6 +25,19 @@ namespace ampcor {
             { copyright__name__, copyright, METH_VARARGS, copyright__doc__ },
             // the version
             { version__name__, version, METH_VARARGS, version__doc__ },
+
+            // correlation plan
+            { sequential::alloc__name__,
+              sequential::alloc, METH_VARARGS, sequential::alloc__doc__},
+
+            { sequential::addReference__name__,
+              sequential::addReference, METH_VARARGS, sequential::addReference__doc__},
+
+            { sequential::addTarget__name__,
+              sequential::addTarget, METH_VARARGS, sequential::addTarget__doc__},
+
+            { sequential::correlate__name__,
+              sequential::correlate, METH_VARARGS, sequential::correlate__doc__},
 
             // slc support
             // pixel size
