@@ -209,20 +209,20 @@ addTarget(PyObject *, PyObject *args)
 // read a reference tile and save it in the dataspace
 const char * const
 ampcor::extension::sequential::
-correlate__name__ = "correlate";
+refine__name__ = "refine";
 
 const char * const
 ampcor::extension::sequential::
-correlate__doc__ = "process a reference tile";
+refine__doc__ = "process a reference tile";
 
 PyObject *
 ampcor::extension::sequential::
-correlate(PyObject *, PyObject *args)
+refine(PyObject *, PyObject *args)
 {
     PyObject * pyWorker;
     // attempt to parse the arguments
     int ok = PyArg_ParseTuple(args,
-                              "O!:correlate",
+                              "O!:refine",
                               &PyCapsule_Type, &pyWorker);
     // if something went wrong
     if (!ok) {
@@ -241,8 +241,8 @@ correlate(PyObject *, PyObject *args)
     sequential_t & worker =
         *reinterpret_cast<sequential_t *>(PyCapsule_GetPointer(pyWorker, capsule_t));
 
-    // ask the worker to add to its pile the reference tile described by {slice}
-    worker.correlate();
+    // ask the worker to refine the map
+    worker.refine();
 
     // all done
     Py_INCREF(Py_None);

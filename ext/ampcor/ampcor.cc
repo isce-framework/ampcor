@@ -36,8 +36,8 @@ namespace ampcor {
             { sequential::addTarget__name__,
               sequential::addTarget, METH_VARARGS, sequential::addTarget__doc__},
 
-            { sequential::correlate__name__,
-              sequential::correlate, METH_VARARGS, sequential::correlate__doc__},
+            { sequential::refine__name__,
+              sequential::refine, METH_VARARGS, sequential::refine__doc__},
 
             // slc support
             // pixel size

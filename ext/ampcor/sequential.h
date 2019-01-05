@@ -30,9 +30,9 @@ namespace ampcor {
             PyObject * addTarget(PyObject *self, PyObject *args);
 
             // compute the correlation of all registered pairs
-            extern const char * const correlate__name__;
-            extern const char * const correlate__doc__;
-            PyObject * correlate(PyObject *self, PyObject *args);
+            extern const char * const refine__name__;
+            extern const char * const refine__doc__;
+            PyObject * refine(PyObject *self, PyObject *args);
 
 
         } // of namespace sequential`
