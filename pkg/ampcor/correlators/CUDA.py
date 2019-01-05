@@ -19,8 +19,10 @@ class CUDA:
 
 
     # interface
-    def correlate(self, reference, target, plan, channel):
+    def refine(self, rasters, plan, channel):
         """
-        Correlate two rasters given a plan
+        Correlate a pair rasters given a plan
         """
+
+
 # end of file

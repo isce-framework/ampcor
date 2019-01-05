@@ -19,14 +19,33 @@ class Sequential:
 
 
     # interface
-    def correlate(self, reference, target, plan, channel):
+    def refine(self, rasters, plan, channel):
         """
         Correlate two rasters given a plan
         """
+        # unpack the rasters
+        ref, tgt = rasters
+        # ask the plan for the total number of points on the map
+        points = len(plan)
+        # the shape of the reference chips
+        chip = plan.chip
+        # and the shape of the search windows
+        window = plan.window
+
         # get the bindings
         libampcor = ampcor.ext.libampcor
         # instantiate the worker
-        worker = libampcor.sequential()
+        worker = libampcor.sequential(points, chip, window)
+
+        # go through the valid pairs
+        for idx, (r,t) in enumerate(plan.pairs):
+            # load the reference slice
+            libampcor.addReference(worker, ref, idx, r.begin, r.end)
+            # load the target slice
+            libampcor.addTarget(worker, tgt, idx, t.begin, t.end)
+
+        # refine the map
+        libampcor.refine(worker)
 
         # all done
         return

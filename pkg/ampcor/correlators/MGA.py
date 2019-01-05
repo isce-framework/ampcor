@@ -54,13 +54,13 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
 
         # choose the correlator implementation
         worker = self.makeWorker(layout=plexus.shell)
-        # show me
-        channel.log(f"worker: {worker}")
+        # get the coarse map specified by the user
+        coarse = self.coarse.map(reference=reference)
 
         # start the timer
         timer.reset().start()
         # make a plan
-        plan = self.makePlan(reference, target)
+        plan = self.makePlan(defmap=coarse, rasters=(reference, target))
         # stop the timer
         timer.stop()
         # show me
@@ -79,11 +79,11 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         # restart the timer
         timer.reset().start()
         # make a plan
-        offsets = worker.correlate(reference=ref, target=tgt, plan=plan, channel=channel)
+        defmap = worker.refine(rasters=(ref, tgt), plan=plan, channel=channel)
         # stop the timer
         timer.stop()
         # show me
-        channel.log(f"offset estimation: {1e3 * timer.read():.3f} ms")
+        channel.log(f"first refinement: {1e3 * timer.read():.3f} ms")
 
         # all done
         return 0
@@ -113,15 +113,13 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         return worker
 
 
-    def makePlan(self, reference, target):
+    def makePlan(self, defmap, rasters):
         """
         Formulate a computational plan for correlating {reference} and {target} to produce an
         offset map
         """
-        # form the coarse map
-        coarse = self.coarse.map(reference=reference)
         # make a plan
-        plan = self.newPlan(correlator=self, offsets=coarse, rasters=(reference, target))
+        plan = self.newPlan(correlator=self, defmap=defmap, rasters=rasters)
         # and return it
         return plan
 

@@ -21,8 +21,11 @@ class Plan:
 
     # public data
     # known at construction
-    tile = None
+    tile = None      # my shape as a grid of correlation pairs
+    chip = None      # the shape of the reference chip
+    padding = None   # the padding to apply to form the search window in the target raster
     # deduced
+    window = None    # the window in the target raster
     reference = None # the sequence of reference tiles
     target = None    # the sequence of target search windows
 
@@ -95,14 +98,22 @@ class Plan:
 
 
     # meta-methods
-    def __init__(self, correlator, offsets, rasters, **kwds):
+    def __init__(self, correlator, defmap, rasters, **kwds):
         # chain up
         super().__init__(**kwds)
         # save my tile
-        self.tile = offsets.tile
+        self.tile = defmap.tile
+
+        # get the reference tile size
+        self.chip = correlator.chip
+        # and the search window padding
+        self.padding = correlator.padding
+        # compute the target window shape
+        self.window = tuple(c+2*p for c,p in zip(self.chip, self.padding))
+
         # initialize my containers
-        self.reference, self.target = self.assemble(correlator=correlator,
-                                                    offsets=offsets, rasters=rasters)
+        self.reference, self.target = self.assemble(defmap=defmap, rasters=rasters)
+
         # all done
         return
 
@@ -129,24 +140,24 @@ class Plan:
 
 
     # implementation details
-    def assemble(self, correlator, rasters, offsets):
+    def assemble(self, rasters, defmap):
         """
-        Form the set of pairs of tiles to correlate in order to refine {offsets}, a coarse offset
+        Form the set of pairs of tiles to correlate in order to refine {defmap}, a coarse offset
         map from a reference image to a target image
         """
         # unpack the rasters
         reference, target = rasters
         # get the reference tile size
-        chip = correlator.chip
+        chip = self.chip
         # and the search window padding
-        padding = correlator.padding
+        padding = self.padding
 
         # initialize the tile containers
         referenceTiles = []
         targetTiles = []
 
         # go through matching pairs of points in the initial guess
-        for ref, tgt in zip(offsets.domain, offsets.codomain):
+        for ref, tgt in zip(defmap.domain, defmap.codomain):
             # form the upper left hand corner of the reference tile
             begin = tuple(r - c//2 for r,c in zip(ref, chip))
             # attempt to make a slice; invalid specs get rejected by the slice factory
