@@ -50,7 +50,7 @@ PyObject *
 ampcor::extension::cuda::
 version(PyObject *, PyObject *)
 {
-    return Py_BuildValue("s", ampcor::meta::version());
+    return Py_BuildValue("s", ampcor::cuda::meta::version());
 }
 
 
