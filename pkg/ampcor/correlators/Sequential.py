@@ -44,7 +44,7 @@ class Sequential:
             # load the target slice
             libampcor.addTarget(worker, tgt, idx, t.begin, t.end)
 
-        # refine the map
+        # ask the worker to perform pixel level adjustments
         libampcor.adjust(worker)
 
         # all done
