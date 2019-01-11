@@ -23,6 +23,57 @@ class CUDA:
         """
         Correlate a pair rasters given a plan
         """
+        # unpack the rasters
+        ref, tgt = rasters
+        # ask the plan for the total number of points on the map
+        points = len(plan)
+        # the shape of the reference chips
+        chip = plan.chip
+        # and the shape of the search windows
+        window = plan.window
+
+        # get the bindings
+        libampcor = ampcor.ext.libampcor_cuda
+        # make a worker
+        worker = libampcor.sequential(points, chip, window)
+
+        # go through the valid ref/tgt pairs
+        for idx, (chip, window) in enumerate(plan.validPairs()):
+            # load the reference slice
+            libampcor.addReference(worker, ref.slc, idx, chip.begin, chip.end)
+            # load the target slice
+            libampcor.addTarget(worker, tgt.slc, idx, window.begin, window.end)
+
+        # ask the worker to perform pixel level adjustments
+        libampcor.adjust(worker)
+
+        # all done
+        return
+
+
+    # meta-methods
+    def __init__(self, **kwds):
+        # chain up
+        super().__init__(**kwds)
+        # get the cuda support
+        import cuda
+        # get the cuda device manager
+        manager = cuda.manager
+        # grab a device
+        manager.device()
+        # all done
+        return
+
+
+    def __del__(self):
+        # get the cuda support
+        import cuda
+        # get the cuda device manager
+        manager = cuda.manager
+        # and reset the device
+        manager.reset()
+        # all done
+        return
 
 
 # end of file

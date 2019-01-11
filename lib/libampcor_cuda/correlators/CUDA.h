@@ -43,8 +43,10 @@ public:
     // add a target search window to the pile
     void addTargetTile(size_type pid, const slc_type & slc, slice_type slice);
 
-    // compute the correlation coefficients
-    void correlate(size_type wid = 0);
+    // perform pixel level adjustments to the registration map
+    void adjust(size_type wid = 0);
+    // perform sub-pixel level adjustments to the registration map
+    void refine(size_type wid = 0);
 
     // meta-methods
 public:

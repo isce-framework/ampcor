@@ -186,7 +186,7 @@ addTargetTile(size_type pid, const slc_type & slc, slice_type slice)
 
 void
 ampcor::cuda::correlators::CUDA::
-correlate(size_type wid)
+adjust(size_type wid)
 {
     // move the input tiles to the device
     auto dArena = _newArena();
@@ -235,6 +235,15 @@ correlate(size_type wid)
     cudaFree(dSAT);
     cudaFree(dAverage);
 
+    // all done
+    return;
+}
+
+
+void
+ampcor::cuda::correlators::CUDA::
+refine(size_type wid)
+{
     // all done
     return;
 }
