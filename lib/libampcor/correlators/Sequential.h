@@ -48,7 +48,9 @@ public:
     // add a target search window to the pile
     inline void addTargetTile(const slc_type & slc, size_type pid, slice_type slice);
 
-    // compute the correlation coefficients
+    // compute pixel level adjustments to the registration map
+    void adjust();
+    // compute sub-pixel level refinements to the registration map
     void refine();
 
     // meta-methods

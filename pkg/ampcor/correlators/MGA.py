@@ -60,7 +60,7 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         # start the timer
         timer.reset().start()
         # make a plan
-        plan = self.makePlan(defmap=coarse, rasters=(reference, target))
+        plan = self.makePlan(regmap=coarse, rasters=(reference, target))
         # stop the timer
         timer.stop()
         # show me
@@ -79,11 +79,11 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         # restart the timer
         timer.reset().start()
         # make a plan
-        defmap = worker.refine(rasters=(ref, tgt), plan=plan, channel=channel)
+        regmap = worker.adjust(rasters=(ref, tgt), plan=plan, channel=channel)
         # stop the timer
         timer.stop()
         # show me
-        channel.log(f"first refinement: {1e3 * timer.read():.3f} ms")
+        channel.log(f"gross adjustment: {1e3 * timer.read():.3f} ms")
 
         # all done
         return 0
@@ -113,13 +113,13 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         return worker
 
 
-    def makePlan(self, defmap, rasters):
+    def makePlan(self, regmap, rasters):
         """
         Formulate a computational plan for correlating {reference} and {target} to produce an
         offset map
         """
         # make a plan
-        plan = self.newPlan(correlator=self, defmap=defmap, rasters=rasters)
+        plan = self.newPlan(correlator=self, regmap=regmap, rasters=rasters)
         # and return it
         return plan
 

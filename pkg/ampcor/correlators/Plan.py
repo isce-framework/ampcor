@@ -98,11 +98,11 @@ class Plan:
 
 
     # meta-methods
-    def __init__(self, correlator, defmap, rasters, **kwds):
+    def __init__(self, correlator, regmap, rasters, **kwds):
         # chain up
         super().__init__(**kwds)
         # save my tile
-        self.tile = defmap.tile
+        self.tile = regmap.tile
 
         # get the reference tile size
         self.chip = correlator.chip
@@ -112,7 +112,7 @@ class Plan:
         self.window = tuple(c+2*p for c,p in zip(self.chip, self.padding))
 
         # initialize my containers
-        self.reference, self.target = self.assemble(defmap=defmap, rasters=rasters)
+        self.reference, self.target = self.assemble(regmap=regmap, rasters=rasters)
 
         # all done
         return
@@ -140,9 +140,9 @@ class Plan:
 
 
     # implementation details
-    def assemble(self, rasters, defmap):
+    def assemble(self, rasters, regmap):
         """
-        Form the set of pairs of tiles to correlate in order to refine {defmap}, a coarse offset
+        Form the set of pairs of tiles to correlate in order to refine {regmap}, a coarse offset
         map from a reference image to a target image
         """
         # unpack the rasters
@@ -157,7 +157,7 @@ class Plan:
         targetTiles = []
 
         # go through matching pairs of points in the initial guess
-        for ref, tgt in zip(defmap.domain, defmap.codomain):
+        for ref, tgt in zip(regmap.domain, regmap.codomain):
             # form the upper left hand corner of the reference tile
             begin = tuple(r - c//2 for r,c in zip(ref, chip))
             # attempt to make a slice; invalid specs get rejected by the slice factory

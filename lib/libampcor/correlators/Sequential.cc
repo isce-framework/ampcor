@@ -16,7 +16,7 @@
 // interface
 void
 ampcor::correlators::Sequential::
-refine()
+adjust()
 {
     // make a timer
     timer_t timer("ampcor.sequential");
@@ -95,6 +95,14 @@ refine()
     // all done
     return;
 }
+
+void
+ampcor::correlators::Sequential::
+refine()
+{
+    return;
+}
+
 
 // meta-methods
 ampcor::correlators::Sequential::

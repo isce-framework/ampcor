@@ -14,12 +14,12 @@ import ampcor
 # declaration
 class CUDA:
     """
-    The CUDA accelerated correlation strategy
+    The CUDA accelerated registration strategy
     """
 
 
     # interface
-    def refine(self, rasters, plan, channel):
+    def adjust(self, rasters, plan, channel):
         """
         Correlate a pair rasters given a plan
         """

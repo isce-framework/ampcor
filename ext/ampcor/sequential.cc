@@ -206,14 +206,58 @@ addTarget(PyObject *, PyObject *args)
 }
 
 
-// read a reference tile and save it in the dataspace
+// pixel level adjustments to the registration map
+const char * const
+ampcor::extension::sequential::
+adjust__name__ = "adjust";
+
+const char * const
+ampcor::extension::sequential::
+adjust__doc__ = "perform pixel level adjustments to the registration map";
+
+PyObject *
+ampcor::extension::sequential::
+adjust(PyObject *, PyObject *args)
+{
+    PyObject * pyWorker;
+    // attempt to parse the arguments
+    int ok = PyArg_ParseTuple(args,
+                              "O!:adjust",
+                              &PyCapsule_Type, &pyWorker);
+    // if something went wrong
+    if (!ok) {
+        // complain
+        return nullptr;
+    }
+
+    // check the worker capsule
+    if (!PyCapsule_IsValid(pyWorker, capsule_t)) {
+        // give a reason
+        PyErr_SetString(PyExc_TypeError, "invalid Sequential worker capsule");
+        // and bail
+        return nullptr;
+    }
+    // and unpack it
+    sequential_t & worker =
+        *reinterpret_cast<sequential_t *>(PyCapsule_GetPointer(pyWorker, capsule_t));
+
+    // ask the worker to adjust the map
+    worker.adjust();
+
+    // all done
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+
+// sub-pixel level refinements to the registration map
 const char * const
 ampcor::extension::sequential::
 refine__name__ = "refine";
 
 const char * const
 ampcor::extension::sequential::
-refine__doc__ = "process a reference tile";
+refine__doc__ = "perform sub-pixel level refinements to the registration map";
 
 PyObject *
 ampcor::extension::sequential::

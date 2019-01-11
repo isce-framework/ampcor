@@ -14,12 +14,12 @@ import ampcor
 # declaration
 class Sequential:
     """
-    The sequential correlation strategy
+    The sequential registration strategy
     """
 
 
     # interface
-    def refine(self, rasters, plan, channel):
+    def adjust(self, rasters, plan, channel):
         """
         Correlate two rasters given a plan
         """
@@ -45,7 +45,7 @@ class Sequential:
             libampcor.addTarget(worker, tgt, idx, t.begin, t.end)
 
         # refine the map
-        libampcor.refine(worker)
+        libampcor.adjust(worker)
 
         # all done
         return
