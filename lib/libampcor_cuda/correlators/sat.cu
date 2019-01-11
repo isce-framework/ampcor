@@ -83,7 +83,7 @@ _newSAT(const cell_type * dArena) const -> cell_type *
     // start the clock
     timer.reset().start();
     // launch the SAT kernel
-    sat <<<B,T>>> (dArena, _refCells*_tgtCells, _refCells, _tgtShape[0], dSAT);
+    sat <<<B,T>>> (dArena, _refCells+_tgtCells, _refCells, _tgtShape[0], dSAT);
     // wait for the device to finish
     status = cudaDeviceSynchronize();
     // stop the clock

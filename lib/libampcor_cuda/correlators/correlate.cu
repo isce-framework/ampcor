@@ -102,6 +102,26 @@ _newCorrelationMatrix(const cell_type * dArena, const cell_type * dAverage) cons
                                      _corShape[0], rowOffset, colOffset,
                                      dCorrelation
                                      );
+            // check for errors
+            status = cudaPeekAtLastError();
+            // if something went wrong
+            if (status != cudaSuccess) {
+                // make a channel
+                pyre::journal::error_t channel("ampcor.cuda");
+                // complain
+                channel
+                    << pyre::journal::at(__HERE__)
+                    << "after launching the " << rowOffset << "x" << colOffset << " correlators: "
+                    << cudaGetErrorName(status) << " (" << status << ")"
+                    << pyre::journal::endl;
+                // and bail
+                break;
+            }
+        }
+        // if something went wrong in the inner loop
+        if (status != cudaSuccess) {
+            // bail out of the outer loop as well
+            break;
         }
     }
     // wait for the device to finish
