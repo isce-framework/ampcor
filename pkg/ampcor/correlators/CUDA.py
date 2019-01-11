@@ -37,12 +37,12 @@ class CUDA:
         # make a worker
         worker = libampcor.sequential(points, chip, window)
 
-        # go through the valid ref/tgt pairs
-        for idx, (chip, window) in enumerate(plan.validPairs()):
+        # go through the valid pairs of reference and target tiles
+        for idx, (r, t) in enumerate(plan.pairs):
             # load the reference slice
-            libampcor.addReference(worker, ref.slc, idx, chip.begin, chip.end)
+            libampcor.addReference(worker, ref, idx, r.begin, r.end)
             # load the target slice
-            libampcor.addTarget(worker, tgt.slc, idx, window.begin, window.end)
+            libampcor.addTarget(worker, tgt, idx, t.begin, t.end)
 
         # ask the worker to perform pixel level adjustments
         libampcor.adjust(worker)
