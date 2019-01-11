@@ -223,7 +223,7 @@ correlate(const cell_t * arena, // the dataspace
     cell_t num = 0;
 
     // reference and target grids area interleaved; compute the stride
-    std::size_t stride = rcells * tcells;
+    std::size_t stride = rcells + tcells;
 
     // my {ref} starting point is column {t} of grid {b}
     auto ref = arena + b*stride + t;
