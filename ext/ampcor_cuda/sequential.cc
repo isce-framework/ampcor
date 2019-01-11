@@ -215,7 +215,7 @@ adjust__name__ = "adjust";
 
 const char * const
 ampcor::extension::cuda::sequential::
-adjust__doc__ = "perform pixel adjustments to the registration map"
+adjust__doc__ = "perform pixel adjustments to the registration map";
 
 PyObject *
 ampcor::extension::cuda::sequential::
@@ -258,7 +258,7 @@ refine__name__ = "refine";
 
 const char * const
 ampcor::extension::cuda::sequential::
-refine__doc__ = "perform sub-pixel adjustments to the registration map"
+refine__doc__ = "perform sub-pixel adjustments to the registration map";
 
 PyObject *
 ampcor::extension::cuda::sequential::
