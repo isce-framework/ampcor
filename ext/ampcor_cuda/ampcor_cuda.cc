@@ -11,6 +11,7 @@
 // the module method declarations
 #include "exceptions.h"
 #include "metadata.h"
+#include "sequential.h"
 
 
 // put everything in my private namespace
@@ -24,6 +25,22 @@ namespace ampcor {
                  { copyright__name__, copyright, METH_VARARGS, copyright__doc__ },
                  // the version
                  { version__name__, version, METH_VARARGS, version__doc__ },
+
+                 // image registration
+                 { sequential::alloc__name__,
+                   sequential::alloc, METH_VARARGS, sequential::alloc__doc__},
+
+                 { sequential::addReference__name__,
+                   sequential::addReference, METH_VARARGS, sequential::addReference__doc__},
+
+                 { sequential::addTarget__name__,
+                   sequential::addTarget, METH_VARARGS, sequential::addTarget__doc__},
+
+                 { sequential::adjust__name__,
+                   sequential::adjust, METH_VARARGS, sequential::adjust__doc__},
+
+                 { sequential::refine__name__,
+                   sequential::refine, METH_VARARGS, sequential::refine__doc__},
 
                  // sentinel
                  { 0, 0, 0, 0 }
