@@ -114,7 +114,7 @@ _newAverageTargetAmplitudes(const cell_type * dSAT) const -> cell_type *
     // report the timing
     tlog
         << pyre::journal::at(__HERE__)
-        << "correlation kernel: " << 1e6 * timer.read() << " μs"
+        << "averaging kernel: " << 1e6 * timer.read() << " μs"
         << pyre::journal::endl;
 
     // hand the hyper-grid memory to the caller

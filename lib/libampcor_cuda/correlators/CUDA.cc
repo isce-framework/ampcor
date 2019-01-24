@@ -221,7 +221,7 @@ adjust(size_type wid)
     // compute the correlation matrix
     auto dCorrelation = _newCorrelationMatrix(dArena, dAverage);
     // if something went wrong
-    if (dAverage == nullptr) {
+    if (dCorrelation == nullptr) {
         // clean up
         cudaFree(dArena);
         cudaFree(dSAT);
