@@ -12,7 +12,7 @@ ampcor.libraries += ampcor.cudalib
 # python extensions
 ampcor.extensions += ampcor.cudaext
 # and some tests
-ampcor.tests += ampcor.cudalib.tests
+ampcor.tests += ampcor.cuda.tests ampcor.cudalib.tests
 
 # libampcor_cuda meta-data
 ampcor.cudalib.stem := ampcor_cuda
@@ -31,12 +31,12 @@ ampcor.cudaext.lib.prerequisites := ampcor.lib
 ampcor.cudaext.lib.c++.flags += $($(compiler.c++).std.c++17)
 ampcor.cudaext.lib.cuda.flags += $(nvcc.std.c++14)
 
-# the libampcor_cuda test suite
-ampcor.cudalib.tests.stem := libampcor_cuda
-ampcor.cudalib.tests.prerequisites := ampcor.lib ampcor.cudalib
-ampcor.cudalib.tests.extern := ampcor.lib pyre cuda
+# the standalone cuda test suite
+ampcor.cuda.tests.stem := cuda
+ampcor.cuda.tests.prerequisites := ampcor.lib
+ampcor.cuda.tests.extern := ampcor.lib pyre cuda
 # compile options for the drivers
-ampcor.cudalib.tests.cuda.flags += $(nvcc.std.c++14)
+ampcor.cuda.tests.cuda.flags += $(nvcc.std.c++14)
 
 cuda.libraries += cufft cudart cudadevrt
 
