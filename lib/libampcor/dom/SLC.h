@@ -22,8 +22,10 @@ public:
     using size_type = size_t; // from ampcor::dom
     // filenames
     using uri_type = uri_t;
+    // my cell type
+    using cell_type = std::complex<float>;
     // my pixel
-    using pixel_type = std::complex<float>;
+    using pixel_type = cell_type;
     // my grid
     using grid_type = constmmap_t<2, pixel_type>;
     // my layout type
