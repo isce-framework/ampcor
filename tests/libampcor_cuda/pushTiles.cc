@@ -68,7 +68,7 @@ int main() {
     // show me
     tlog
         << pyre::journal::at(__HERE__)
-        << "instantiating the manager: " << 1e6 * timer.read() << " μs"
+        << "instantiating the manager: " << 1e3 * timer.read() << " ms"
         << pyre::journal::endl;
 
     // start the clock
@@ -119,13 +119,12 @@ int main() {
     // get the payload
     auto footprint = pairs * sizeof(slc_t::cell_type) * (refExt*refExt + tgtExt*tgtExt);
     // compute the transfer rate in Gb/s
-    auto rate = footprint / duration / 1024/2014/1024;
+    auto rate = footprint / duration / 1024/1024/1024;
     // show me
     tlog
         << pyre::journal::at(__HERE__)
         << "moving the dataset to the device: " << 1e3 * duration << " ms"
-        << pyre::journal::newline
-        << "at " << rate << "Gb/s"
+        << ", at " << rate << " Gb/s"
         << pyre::journal::endl;
 
     // clean up
