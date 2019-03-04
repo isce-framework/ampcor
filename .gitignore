@@ -2,6 +2,7 @@
 /builds
 /data
 *~
+*.d
 *.i
 *.ii
 *.gpu
