@@ -41,7 +41,7 @@ int main() {
     correlator_t::shape_type tgtShape = { 192, 192 };
 
     // start the clock
-    timer.start();
+    timer.reset().start();
     // make a correlator
     correlator_t c(pairs, refShape, tgtShape);
     // stop the clock

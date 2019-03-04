@@ -60,7 +60,7 @@ int main() {
     slc_t::layout_type tgtLayout = { tgtShape };
 
     // start the clock
-    timer.start();
+    timer.reset().start();
     // make a correlator
     correlator_t c(pairs, refLayout, tgtLayout);
     // stop the clock
@@ -72,7 +72,7 @@ int main() {
         << pyre::journal::endl;
 
     // start the clock
-    timer.start();
+    timer.reset().start();
     // build reference tiles
     for (auto i=0; i<placements; ++i) {
         for (auto j=0; j<placements; ++j) {
