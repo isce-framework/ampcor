@@ -38,6 +38,13 @@ ampcor.cuda.tests.extern := ampcor.lib pyre cuda
 # compile options for the drivers
 ampcor.cuda.tests.cuda.flags += $(nvcc.std.c++14)
 
+# the libampcor_cuda test suite
+ampcor.cudalib.tests.stem := libampcor_cuda
+ampcor.cudalib.tests.prerequisites := ampcor.lib ampcor.cudalib
+ampcor.cudalib.tests.extern := ampcor.cudalib ampcor.lib pyre cuda
+# compile options for the drivers
+ampcor.cudalib.tests.cuda.flags += $(nvcc.std.c++14)
+
 cuda.libraries += cufft cudart cudadevrt
 
 # end of file

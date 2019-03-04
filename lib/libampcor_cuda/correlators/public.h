@@ -17,6 +17,9 @@
 #include <algorithm>
 #include <functional>
 #include <numeric>
+#include <exception>
+// cuda
+#include <cuda_runtime.h>
 // pyre
 #include <pyre/journal.h>
 #include <pyre/timers.h>
@@ -47,10 +50,15 @@ namespace ampcor {
             // forward declarations of local classes
             // workers
             class CUDA;
+            // the manager
+            template <typename raster_t> class Sequential;
 
             // the public type aliases for the local objects
             // workers
             using sequential_t = CUDA;
+            // interim
+            template <typename raster_t>
+            using interim_t = Sequential<raster_t>;
             // sum area
             // using sumarea_t = SumArea;
 
@@ -61,6 +69,13 @@ namespace ampcor {
 
 // the class declarations
 #include "CUDA.h"
+#include "Sequential.h"
+
+// the inline definitions
+// sequential
+#define ampcor_cuda_correlators_Sequential_icc
+#include "Sequential.icc"
+#undef ampcor_cuda_correlators_Sequential_icc
 
 
 // code guard

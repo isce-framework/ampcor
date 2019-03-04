@@ -1,0 +1,140 @@
+// -*- C++ -*-
+// -*- coding: utf-8 -*-
+//
+// michael a.g. aïvázis <michael.aivazis@para-sim.com>
+// parasim
+// (c) 1998-2019 all rights reserved
+//
+
+// code guard
+#if !defined(ampcor_cuda_correlators_Sequential_icc)
+#error This header is an implementation detail of ampcor::cuda::correlators::Sequential
+#endif
+
+// interface
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+addReferenceTile(size_type pid, const constview_type & ref)
+{
+    // figure out the starting address of this tile in the arena
+    cell_type * support = _hArena + pid*(_refCells + _tgtCells);
+    // adapt it into a grid
+    tile_type tile(_refLayout, support);
+    // move the data
+    std::copy(ref.begin(), ref.end(), tile.view().begin());
+    // all done
+    return;
+}
+
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+addTargetTile(size_type pid, const constview_type & tgt)
+{
+    // figure out the starting address of this tile in the arena
+    cell_type * support = _hArena + pid*(_refCells + _tgtCells) + _refCells;
+    // adapt it into a grid
+    tile_type tile(_tgtLayout, support);
+    // move the data
+    std::copy(tgt.begin(), tgt.end(), tile.view().begin());
+    // all done
+    return;
+}
+
+
+// meta-methods
+template <typename raster_t>
+ampcor::cuda::correlators::Sequential<raster_t>::
+~Sequential() {
+    // release the host memory
+    delete [] _hArena;
+}
+
+
+template <typename raster_t>
+ampcor::cuda::correlators::Sequential<raster_t>::
+Sequential(size_type pairs, const layout_type & refLayout, const layout_type & tgtLayout) :
+    _pairs{pairs},
+    _refLayout{refLayout},
+    _tgtLayout{tgtLayout},
+    _refCells(_refLayout.size()),
+    _tgtCells(_tgtLayout.size()),
+    _refFootprint{_refCells * sizeof(cell_type)},
+    _tgtFootprint{_tgtCells * sizeof(cell_type)},
+    _hArena{new cell_type[ _pairs * (_refCells+_tgtCells) ]}
+{
+    // compute the footprint
+    auto footprint = _pairs*(_refFootprint + _tgtFootprint);
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
+    // show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "new Sequential worker:"
+        << pyre::journal::newline
+        << "    pairs: " << _pairs
+        << pyre::journal::newline
+        << "    ref shape: " << _refLayout << ", " << _refCells << " cells"
+        << pyre::journal::newline
+        << "    tgt shape: " << _tgtLayout << ", " << _tgtCells << " cells"
+        << pyre::journal::newline
+        << "    footprint: " << (_refCells+_tgtCells) << " cells in "
+        << (footprint/1024/1024) << " Mb"
+        << pyre::journal::newline
+        << "    arena: " << _hArena
+        << pyre::journal::endl;
+}
+
+
+// debugging support
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+dump() const
+{
+    // dump the arena as a sequence of reference and target tiles
+    pyre::journal::debug_t channel("ampcor.cuda");
+
+    // sign in
+    channel << pyre::journal::at(__HERE__);
+    // go through all the pairs
+    for (auto pid = 0; pid < _pairs; ++pid) {
+        // inject the pid
+        channel << "pid: " << pid << pyre::journal::newline;
+        // compute the address of the reference tile in the arena
+        cell_type * refLoc = _hArena + pid*(_refCells + _tgtCells);
+        // adapt it into a grid
+        tile_type ref(_refLayout, refLoc);
+        // inject it
+        channel << "reference: " << pyre::journal::newline;
+        for (auto idx = 0; idx < _refLayout.shape()[0]; ++idx) {
+            for (auto jdx = 0; jdx < _refLayout.shape()[1]; ++jdx) {
+                channel << ref[{idx, jdx}] << " ";
+            }
+            channel << pyre::journal::newline;
+        }
+
+        // compute the address of the target tile in the arena
+        cell_type * tgtLoc = refLoc + _refCells;
+        // adapt it into a grid
+        tile_type tgt(_tgtLayout, tgtLoc);
+
+        // inject it
+        channel << "target: " << pyre::journal::newline;
+        for (auto idx = 0; idx < _tgtLayout.shape()[0]; ++idx) {
+            for (auto jdx = 0; jdx < _tgtLayout.shape()[1]; ++jdx) {
+                channel << tgt[{idx, jdx}] << " ";
+            }
+            channel << pyre::journal::newline;
+        }
+
+    }
+    // sing off
+    channel << pyre::journal::endl;
+
+    // all done
+    return;
+}
+
+// end of file
