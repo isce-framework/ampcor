@@ -73,13 +73,17 @@ int main() {
 
     // start the clock
     timer.start();
-    // make a reference raster
-    slc_t ref(refLayout);
-    // fill it with ones
-    std::fill(ref.view().begin(), ref.view().end(), 1);
     // build reference tiles
     for (auto i=0; i<placements; ++i) {
         for (auto j=0; j<placements; ++j) {
+            // compute the pair id
+            int pid = i*placements + j;
+
+            // make a reference raster
+            slc_t ref(refLayout);
+            // fill it with ones
+            std::fill(ref.view().begin(), ref.view().end(), pid);
+
             // make a target tile
             slc_t tgt(tgtLayout);
             // fill it with zeroes
@@ -89,7 +93,7 @@ int main() {
             // make a view of the tgt tile over this slice
             slc_t::view_type view = tgt.view(slice);
             // fill it with ones
-            std::fill(view.begin(), view.end(), 1);
+            std::copy(ref.view().begin(), ref.view().end(), view.begin());
 
             // show me
             channel << "tgt[" << i << "," << j << "]:" << pyre::journal::newline;
@@ -101,8 +105,6 @@ int main() {
             }
             channel << pyre::journal::endl;
 
-            // compute the pair id
-            int pid = i*placements + j;
             // add this pair to the correlator
             c.addReferenceTile(pid, ref.constview());
             c.addTargetTile(pid, tgt.constview());
