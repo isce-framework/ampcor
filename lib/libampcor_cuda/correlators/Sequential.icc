@@ -56,13 +56,14 @@ template <typename raster_t>
 ampcor::cuda::correlators::Sequential<raster_t>::
 Sequential(size_type pairs, const layout_type & refLayout, const layout_type & tgtLayout) :
     _pairs{pairs},
-    _refLayout{refLayout},
-    _tgtLayout{tgtLayout},
-    _refCells(_refLayout.size()),
-    _tgtCells(_tgtLayout.size()),
-    _refFootprint{_refCells * sizeof(cell_type)},
-    _tgtFootprint{_tgtCells * sizeof(cell_type)},
-    _hArena{new cell_type[ _pairs * (_refCells+_tgtCells) ]}
+    _refLayout{ refLayout },
+    _tgtLayout{ tgtLayout },
+    _refCells{ _refLayout.size() },
+    _tgtCells{ _tgtLayout.size() },
+    _refFootprint{ _refCells * sizeof(cell_type) },
+    _tgtFootprint{ _tgtCells * sizeof(cell_type) },
+    _hArena{ new cell_type[ _pairs * (_refCells+_tgtCells) ] },
+    _dArena{ nullptr }
 {
     // compute the footprint
     auto footprint = _pairs*(_refFootprint + _tgtFootprint);
@@ -137,4 +138,55 @@ dump() const
     return;
 }
 
+
+// implementation details: methods
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+_push() const -> cell_type *
+{
+    // grab a spot
+    cell_type * dArena = nullptr;
+    // compute the required size
+    auto footprint = _pairs * (_refFootprint + _tgtFootprint);
+    // allocate room for it
+    cudaError_t status = cudaMallocManaged(&dArena, footprint);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while allocating " << 1.0*footprint/1024/1024
+            << "Mb of device memory for the input hyper-grid: "
+            << cudaGetErrorName(status) << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::bad_alloc();
+    }
+
+    // move the data
+    status = cudaMemcpy(dArena, _hArena, footprint, cudaMemcpyHostToDevice);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // build the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while transferring tiles to the device: "
+            << description << " (" << status << ")"
+            << pyre::journal::endl;
+        // release the memory
+        cudaFree(dArena);
+        // and bail
+        throw std::logic_error(description);
+    }
+
+    // all done
+    return dArena;
+}
 // end of file

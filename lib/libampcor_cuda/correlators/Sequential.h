@@ -54,6 +54,11 @@ public:
     virtual ~Sequential();
     Sequential(size_type pairs, const layout_type & refLayout, const layout_type & tgtLayout);
 
+
+    // implementation details: methods
+public:
+    auto _push() const -> cell_type *;
+
     // implementation details: data
 private:
     // my capacity, in {ref/tgt} pairs
@@ -76,6 +81,8 @@ private:
 
     // host storage for the tile pairs
     cell_type * _hArena;
+    // matching storage on the device
+    cell_type * _dArena;
 };
 
 
