@@ -21,8 +21,10 @@ public:
     // views over it
     using view_type = typename raster_type::view_type;
     using constview_type = typename raster_type::constview_type;
-    // the underlying pixel type
+    // the underlying pixel complex type
     using cell_type = typename raster_type::cell_type;
+    // the support of the pixel complex type
+    using value_type = typename cell_type::value_type;
     // for describing slices of rasters
     using slice_type = typename raster_type::slice_type;
     // for describing the shapes of tiles
@@ -46,6 +48,9 @@ public:
     // add a target search window to the pile
     void addTargetTile(size_type pid, const constview_type & tgt);
 
+    // accessors
+    auto arena() const -> const cell_type *;
+
     // debugging support
     void dump() const;
 
@@ -57,7 +62,10 @@ public:
 
     // implementation details: methods
 public:
+    // push the tiles in the plan to device
     auto _push() const -> cell_type *;
+    // compute the magnitude of the complex signal pixel-by-pixel
+    auto _detect(cell_type * cArena) const -> value_type *;
 
     // implementation details: data
 private:
@@ -80,9 +88,7 @@ private:
     size_type _tgtFootprint;
 
     // host storage for the tile pairs
-    cell_type * _hArena;
-    // matching storage on the device
-    cell_type * _dArena;
+    cell_type * _arena;
 };
 
 

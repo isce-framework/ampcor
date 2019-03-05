@@ -18,7 +18,7 @@ ampcor::cuda::correlators::Sequential<raster_t>::
 addReferenceTile(size_type pid, const constview_type & ref)
 {
     // figure out the starting address of this tile in the arena
-    cell_type * support = _hArena + pid*(_refCells + _tgtCells);
+    cell_type * support = _arena + pid*(_refCells + _tgtCells);
     // adapt it into a grid
     tile_type tile(_refLayout, support);
     // move the data
@@ -33,7 +33,7 @@ ampcor::cuda::correlators::Sequential<raster_t>::
 addTargetTile(size_type pid, const constview_type & tgt)
 {
     // figure out the starting address of this tile in the arena
-    cell_type * support = _hArena + pid*(_refCells + _tgtCells) + _refCells;
+    cell_type * support = _arena + pid*(_refCells + _tgtCells) + _refCells;
     // adapt it into a grid
     tile_type tile(_tgtLayout, support);
     // move the data
@@ -43,12 +43,22 @@ addTargetTile(size_type pid, const constview_type & tgt)
 }
 
 
+// accessors
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+arena() const -> const cell_type *
+{
+    return _arena;
+}
+
+
 // meta-methods
 template <typename raster_t>
 ampcor::cuda::correlators::Sequential<raster_t>::
 ~Sequential() {
     // release the host memory
-    delete [] _hArena;
+    delete [] _arena;
 }
 
 
@@ -62,8 +72,7 @@ Sequential(size_type pairs, const layout_type & refLayout, const layout_type & t
     _tgtCells{ _tgtLayout.size() },
     _refFootprint{ _refCells * sizeof(cell_type) },
     _tgtFootprint{ _tgtCells * sizeof(cell_type) },
-    _hArena{ new cell_type[ _pairs * (_refCells+_tgtCells) ] },
-    _dArena{ nullptr }
+    _arena{ new cell_type[ _pairs * (_refCells+_tgtCells) ] }
 {
     // compute the footprint
     auto footprint = _pairs*(_refFootprint + _tgtFootprint);
@@ -83,7 +92,7 @@ Sequential(size_type pairs, const layout_type & refLayout, const layout_type & t
         << "    footprint: " << (_refCells+_tgtCells) << " cells in "
         << (footprint/1024/1024) << " Mb"
         << pyre::journal::newline
-        << "    arena: " << _hArena
+        << "    arena: " << _arena
         << pyre::journal::endl;
 }
 
@@ -104,7 +113,7 @@ dump() const
         // inject the pid
         channel << "pid: " << pid << pyre::journal::newline;
         // compute the address of the reference tile in the arena
-        cell_type * refLoc = _hArena + pid*(_refCells + _tgtCells);
+        cell_type * refLoc = _arena + pid*(_refCells + _tgtCells);
         // adapt it into a grid
         tile_type ref(_refLayout, refLoc);
         // inject it
@@ -140,17 +149,19 @@ dump() const
 
 
 // implementation details: methods
+
+// push the tiles to the device
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
 _push() const -> cell_type *
 {
     // grab a spot
-    cell_type * dArena = nullptr;
+    cell_type * cArena = nullptr;
     // compute the required size
     auto footprint = _pairs * (_refFootprint + _tgtFootprint);
     // allocate room for it
-    cudaError_t status = cudaMallocManaged(&dArena, footprint);
+    cudaError_t status = cudaMallocManaged(&cArena, footprint);
     // if something went wrong
     if (status != cudaSuccess) {
         // make a channel
@@ -167,7 +178,7 @@ _push() const -> cell_type *
     }
 
     // move the data
-    status = cudaMemcpy(dArena, _hArena, footprint, cudaMemcpyHostToDevice);
+    status = cudaMemcpy(cArena, _arena, footprint, cudaMemcpyHostToDevice);
     // if something went wrong
     if (status != cudaSuccess) {
         // build the error description
@@ -181,12 +192,50 @@ _push() const -> cell_type *
             << description << " (" << status << ")"
             << pyre::journal::endl;
         // release the memory
-        cudaFree(dArena);
+        cudaFree(cArena);
         // and bail
         throw std::logic_error(description);
     }
 
     // all done
-    return dArena;
+    return cArena;
 }
+
+// compute the amplitude of the signal
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+_detect(cell_type * cArena) const -> value_type *
+{
+    // find a spot on the device
+    value_type * rArena = nullptr;
+    // compute the number of cells whose amplitude we have to compute
+    auto cells = _pairs * (_refCells + _tgtCells);
+    // compute the required size
+    auto footprint = cells * sizeof(value_type);
+    // allocate room for it
+    cudaError_t status = cudaMallocManaged(&rArena, footprint);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while allocating " << 1.0*footprint/1024/1024
+            << "Mb of device memory for the tile amplitudes: "
+            << cudaGetErrorName(status) << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::bad_alloc();
+    }
+
+    // engage...
+    kernels::detect(cArena, cells, rArena);
+
+    // all done
+    return rArena;
+};
+
+
 // end of file

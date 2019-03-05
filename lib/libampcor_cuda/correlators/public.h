@@ -66,6 +66,8 @@ namespace ampcor {
     } // of namespace cuda
 } // of namespace ampcor
 
+// kernels
+#include "kernels.h"
 
 // the class declarations
 #include "CUDA.h"
