@@ -38,6 +38,8 @@ public:
     using shape_type = grid_type::shape_type;
     // my view type
     using view_type = grid_type::view_type;
+    // my constview type
+    using constview_type = grid_type::constview_type;
 
     // interface
 public:
@@ -64,6 +66,8 @@ public:
 
     inline auto view() const;
     inline auto view(const slice_type & slice) const;
+
+    inline auto constview(const slice_type & slice) const;
 
     // meta-methods
 public:

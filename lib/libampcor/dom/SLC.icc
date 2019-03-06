@@ -110,6 +110,14 @@ view(const slice_type & slice) const {
 }
 
 
+auto
+ampcor::dom::SLC::
+constview(const slice_type & slice) const {
+    // ask my grid
+    return _grid.constview(slice);
+}
+
+
 // constructor
 ampcor::dom::SLC::
 SLC(uri_type filename, shape_type shape) :
