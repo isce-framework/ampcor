@@ -24,13 +24,13 @@
 // helpers
 __global__
 static void
-_detect(cuFloatComplex * cArena, std::size_t cells, std::size_t load, float * rArena);
+_detect(const cuFloatComplex * cArena, std::size_t cells, std::size_t load, float * rArena);
 
 
 // compute the amplitude of the signal tiles, assuming pixels are of type std::complex<float>
 void
 ampcor::cuda::kernels::
-detect(std::complex<float> * cArena, std::size_t cells, float * rArena)
+detect(const std::complex<float> * cArena, std::size_t cells, float * rArena)
 {
     // this is embarrassingly parallel, so pick a simple deployment schedule
     // the load of each thread
@@ -43,7 +43,7 @@ detect(std::complex<float> * cArena, std::size_t cells, float * rArena)
     std::size_t B = (cells / L) + (cells % L ? 1 : 0);
 
     // make a channel
-    pyre::journal::info_t channel("ampcor.cuda");
+    pyre::journal::debug_t channel("ampcor.cuda");
     // show me
     channel
         << pyre::journal::at(__HERE__)
@@ -52,7 +52,7 @@ detect(std::complex<float> * cArena, std::size_t cells, float * rArena)
         << pyre::journal::endl;
 
     // launch
-    _detect <<<B,T>>> (reinterpret_cast<cuFloatComplex *>(cArena), cells, N, rArena);
+    _detect <<<B,T>>> (reinterpret_cast<const cuFloatComplex *>(cArena), cells, N, rArena);
     // wait for the device to finish
     cudaError_t status = cudaDeviceSynchronize();
     // if something went wrong
@@ -79,7 +79,7 @@ detect(std::complex<float> * cArena, std::size_t cells, float * rArena)
 // implementations
 __global__
 static void
-_detect(cuFloatComplex * cArena, std::size_t cells, std::size_t load, float * rArena)
+_detect(const cuFloatComplex * cArena, std::size_t cells, std::size_t load, float * rArena)
 {
     // build the workload descriptors
     // global
