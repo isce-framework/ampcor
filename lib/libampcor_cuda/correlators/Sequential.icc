@@ -205,7 +205,7 @@ _push() const -> cell_type *
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_detect(cell_type * cArena) const -> value_type *
+_detect(const cell_type * cArena) const -> value_type *
 {
     // find a spot on the device
     value_type * rArena = nullptr;
@@ -236,6 +236,22 @@ _detect(cell_type * cArena) const -> value_type *
     // all done
     return rArena;
 };
+
+
+// subtract the tile mean from each reference pixel
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+_zeroMean(value_type * rArena) const
+{
+    // get the layout of the target tiles; assume they are square
+    auto refExt = _refLayout.shape()[0];
+    // engage
+    kernels::zeroMean(rArena, _pairs, refExt, _refCells + _tgtCells);
+
+    // all done
+    return;
+}
 
 
 // end of file

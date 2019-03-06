@@ -65,7 +65,9 @@ public:
     // push the tiles in the plan to device
     auto _push() const -> cell_type *;
     // compute the magnitude of the complex signal pixel-by-pixel
-    auto _detect(cell_type * cArena) const -> value_type *;
+    auto _detect(const cell_type * cArena) const -> value_type *;
+    // adjust reference pixels by subtracting the tile mean
+    void _zeroMean(value_type * rArena) const;
 
     // implementation details: data
 private:

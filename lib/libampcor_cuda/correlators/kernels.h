@@ -17,7 +17,11 @@ namespace ampcor {
         namespace kernels {
 
             // compute amplitudes of the tile pixels
-            void detect(std::complex<float> * cArena, std::size_t cells, float * rArena);
+            void detect(const std::complex<float> * cArena, std::size_t cells, float * rArena);
+
+            // subtract the tile mean from each reference pixel
+            void zeroMean(float * rArena,
+                          std::size_t pairs, std::size_t refDim, std::size_t cellsPerTilePair);
 
         }
     }
