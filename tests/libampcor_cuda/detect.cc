@@ -23,7 +23,7 @@ using value_type = float;
 // my raster type
 using slc_t = pyre::grid::simple_t<2, std::complex<value_type>>;
 // the correlator
-using correlator_t = ampcor::cuda::correlators::interim_t<slc_t>;
+using correlator_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
 // driver
 int main() {
