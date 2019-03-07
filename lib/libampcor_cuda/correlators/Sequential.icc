@@ -42,6 +42,24 @@ addTargetTile(size_type pid, const constview_type & tgt)
     return;
 }
 
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+adjust()
+{
+    // all done
+    return;
+}
+
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+refine()
+{
+    // all done
+    return;
+}
+
 
 // accessors
 template <typename raster_t>
@@ -237,7 +255,6 @@ _detect(const cell_type * cArena) const -> value_type *
     return rArena;
 };
 
-
 // subtract the tile mean from each reference pixel
 template <typename raster_t>
 void
@@ -251,6 +268,18 @@ _zeroMean(value_type * rArena) const
 
     // all done
     return;
+}
+
+// build the sum area tables for the target tiles
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+_sat(const value_type * rArena) const -> value_type *
+{
+    // grab a spot for the sat tables
+    value_type * sat;
+    // all done
+    return sat;
 }
 
 

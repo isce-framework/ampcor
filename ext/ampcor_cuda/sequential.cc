@@ -24,7 +24,7 @@
 // alias SLC
 using slc_t = ampcor::dom::slc_t;
 // alias the sequential worker
-using sequential_t = ampcor::cuda::correlators::sequential_t;
+using sequential_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
 
 // constructor
@@ -130,7 +130,7 @@ addReference(PyObject *, PyObject *args)
     auto slice = slc.layout().slice(begin, end);
 
     // ask the worker to add to its pile the reference tile described by {slice}
-    worker.addReferenceTile(idx, slc, slice);
+    worker.addReferenceTile(idx, slc.constview(slice));
 
     // all done
     Py_INCREF(Py_None);
@@ -200,7 +200,7 @@ addTarget(PyObject *, PyObject *args)
     auto slice = slc.layout().slice(begin, end);
 
     // ask the worker to add to its pile the target tile described by {slice}
-    worker.addTargetTile(idx, slc, slice);
+    worker.addTargetTile(idx, slc.constview(slice));
 
     // all done
     Py_INCREF(Py_None);

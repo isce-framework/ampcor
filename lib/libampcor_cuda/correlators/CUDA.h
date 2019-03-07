@@ -14,6 +14,22 @@
 // access to the dom
 #include <ampcor/dom.h>
 
+namespace ampcor {
+    namespace cuda {
+        namespace correlators {
+            // local type aliases
+            // sizes of things
+            using size_t = std::size_t;
+
+            // pyre timers
+            using timer_t = pyre::timer_t;
+
+            // place me in this namespace
+            class CUDA;
+        }
+    }
+}
+
 // resource management and orchestration of the execution of the correlation plan
 class ampcor::cuda::correlators::CUDA {
     // types

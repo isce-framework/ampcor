@@ -8,10 +8,20 @@
 
 // configuration
 #include <portinfo>
+// STL
+#include <cmath>
+#include <algorithm>
+#include <functional>
+#include <numeric>
+#include <exception>
+// pyre
+#include <pyre/journal.h>
+#include <pyre/timers.h>
+#include <pyre/grid.h>
 // cuda
 #include <cuda_runtime.h>
 // pull the local declarations
-#include "public.h"
+#include "CUDA.h"
 
 
 // interface

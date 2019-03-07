@@ -48,19 +48,13 @@ namespace ampcor {
                                     >;
 
             // forward declarations of local classes
-            // workers
-            class CUDA;
             // the manager
             template <typename raster_t> class Sequential;
 
             // the public type aliases for the local objects
             // workers
-            using sequential_t = CUDA;
-            // interim
             template <typename raster_t>
-            using interim_t = Sequential<raster_t>;
-            // sum area
-            // using sumarea_t = SumArea;
+            using sequential_t = Sequential<raster_t>;
 
         } // of namespace correlators
     } // of namespace cuda
@@ -70,7 +64,6 @@ namespace ampcor {
 #include "kernels.h"
 
 // the class declarations
-#include "CUDA.h"
 #include "Sequential.h"
 
 // the inline definitions

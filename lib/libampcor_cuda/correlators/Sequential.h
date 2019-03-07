@@ -48,6 +48,11 @@ public:
     // add a target search window to the pile
     void addTargetTile(size_type pid, const constview_type & tgt);
 
+    // coarse adjustment to the offset map
+    void adjust();
+    // fine adjustments to the offset map
+    void refine();
+
     // accessors
     auto arena() const -> const cell_type *;
 
@@ -68,6 +73,8 @@ public:
     auto _detect(const cell_type * cArena) const -> value_type *;
     // adjust reference pixels by subtracting the tile mean
     void _zeroMean(value_type * rArena) const;
+    // compute the sum area tables for the target tiles
+    auto _sat(const value_type * rArena) const -> value_type *;
 
     // implementation details: data
 private:
