@@ -284,11 +284,8 @@ _sat(const value_type * rArena) const -> value_type *
 
     // grab a spot for the sat tables
     value_type * sat = nullptr;
-
-    // the total number of cells in the SAT hypergrid
-    auto cells = _pairs * _tgtCells;
-    // the amount of memory needed to store them
-    auto footprint = _pairs * _tgtFootprint;;
+    // compute the amount of memory needed to store them
+    auto footprint = _pairs * _tgtFootprint;
     // allocate memory
     cudaError_t status = cudaMallocManaged(&sat, footprint);
     // if something went wrong
@@ -311,8 +308,6 @@ _sat(const value_type * rArena) const -> value_type *
         << sat
         << pyre::journal::endl;
 
-    // compute the layout of the reference tiles; assume they are square
-    auto refDim = _refLayout.shape()[0];
     // compute the layout of the target tiles; assume they are square
     auto tgtDim = _tgtLayout.shape()[0];
     // engage
