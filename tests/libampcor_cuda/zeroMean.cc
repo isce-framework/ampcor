@@ -223,7 +223,7 @@ int main() {
                 << "mismatch at tile " << pid << ": " << mean << " != 0"
                 << pyre::journal::endl;
             // bail
-            break;
+            throw std::runtime_error("verification error!");
         }
     }
     // stop the clock
