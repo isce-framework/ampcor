@@ -75,6 +75,11 @@ public:
     void _zeroMean(value_type * rArena) const;
     // compute the sum area tables for the target tiles
     auto _sat(const value_type * rArena) const -> value_type *;
+    // compute the average value of all possible placements of a tile the same size as the
+    // reference tile within the target
+    auto _averages(const value_type * rArena) const -> value_type *;
+    // correlate
+    auto _correlate(const value_type * rArena, const value_type * averages) const -> value_type *;
 
     // implementation details: data
 private:
@@ -85,16 +90,22 @@ private:
     layout_type _refLayout;
     // the shape of the search windows in the target image
     layout_type _tgtLayout;
+    // the shape of the correlation matrix
+    layout_type _corLayout;
 
     // the number of cells in a reference tile
     size_type _refCells;
     // the number of cells in a target search window
     size_type _tgtCells;
+    // the number of cell in a correlation matrix
+    size_type _corCells;
 
     // the number of bytes in a reference tile
     size_type _refFootprint;
     // the number of bytes in a target search window
     size_type _tgtFootprint;
+    // the number of bytes in a correlation matrix
+    size_type _corFootprint;
 
     // host storage for the tile pairs
     cell_type * _arena;

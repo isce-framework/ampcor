@@ -9,23 +9,24 @@
 
 // configuration
 #include <portinfo>
+// STL
+#include <complex>
 // cuda
 #include <cuda_runtime.h>
 #include <cooperative_groups.h>
+// pyre
+#include <pyre/journal.h>
 // pull the declarations
-#include "public.h"
-
-
-// local alias for the worker cell tupe
-using cell_t = ampcor::cuda::correlators::CUDA::cell_type;
+#include "kernels.h"
 
 
 // the SAT generation kernel
+template <typename value_t = float>
 __global__
 static void
-avg(const cell_t * sat,
-      std::size_t tiles, std::size_t tgtDim, std::size_t corDim,
-      cell_t * avg);
+_avg(const value_t * sat,
+     std::size_t tiles, std::size_t tgtDim, std::size_t corDim,
+     value_t * avg);
 
 
 // implementation
@@ -38,98 +39,60 @@ avg(const cell_t * sat,
 // in no more than four memory accesses per search tile; there are boundary cases to consider
 // that add a bit of complexity to the implementation; the boundary cases could have been
 // trivialized using ghost cells around the search window boundary, but the memory cost is high
-auto
-ampcor::cuda::correlators::CUDA::
-_newAverageTargetAmplitudes(const cell_type * dSAT) const -> cell_type *
+void
+ampcor::cuda::kernels::
+avg(const float * dSAT,
+    std::size_t pairs, std::size_t tgtDim, std::size_t corDim,
+    float * dAverage)
 {
-    // make a timer
-    timer_t timer("ampcor.cuda");
     // make a channel
     pyre::journal::info_t channel("ampcor.cuda");
-    // and another for reporting timings
-    pyre::journal::info_t tlog("ampcor.cuda.timings");
 
-    // allocate room for the table of amplitude averages
-    // pick a spot
-    cell_type * dAverage;
-    // the total number of cells in the amplitude hyper-grid
-    auto size = _pairs * _corCells;
-    // the amount of memory needed to store them
-    auto footprint = size * sizeof(cell_type);
-    // allocate some device memory
-    cudaError_t status = cudaMallocManaged(&dAverage, footprint);
-    // if something went wrong
-    if (status != cudaSuccess) {
-        // make a channel
-        pyre::journal::error_t channel("ampcor.cuda");
-        // complain
-        channel
-            << pyre::journal::at(__HERE__)
-            << "while allocating device memory for the table of target amplitude averages: "
-            << cudaGetErrorName(status) << " (" << status << ")"
-            << pyre::journal::endl;
-        // bail
-        return nullptr;
-    }
-    // show me
-    channel
-        << pyre::journal::at(__HERE__)
-        << "allocated an arena of " << footprint << " bytes for the target amplitude averages at "
-        << dAverage
-        << pyre::journal::endl;
-    // start the clock
-    timer.reset().start();
     // launch blocks of 256 threads
     auto T = 256;
     // in as many blocks as it takes to handle all pairs
-    auto B = _pairs % T ? (_pairs/T + 1) : _pairs/T;
+    auto B = pairs / T + (pairs % T ? 1 : 0);
     // show me
     channel
         << pyre::journal::at(__HERE__)
         << "launching " << B << " blocks of " << T
-        << " threads each to handle the " << _pairs
+        << " threads each to handle the " << pairs
         << " UL corners of the hyper-grid of target amplitude averages"
         << pyre::journal::endl;
     // launch the kernels
-    avg <<<B,T>>> (dSAT, _pairs, _tgtShape[0], _corShape[0], dAverage);
+    _avg <<<B,T>>> (dSAT, pairs, tgtDim, corDim, dAverage);
     // wait for the kernels to finish
-    status = cudaDeviceSynchronize();
-    // stop the clock
-    timer.stop();
+    cudaError_t status = cudaDeviceSynchronize();
     // check
     if (status != cudaSuccess) {
+        // get the description of the error
+        std::string description = cudaGetErrorName(status);
         // make a channel
         pyre::journal::error_t channel("ampcor.cuda");
         // complain
         channel
             << pyre::journal::at(__HERE__)
             << "while computing the average amplitudes of all possible search window placements: "
-            << cudaGetErrorName(status) << " (" << status << ")"
+            << description << " (" << status << ")"
             << pyre::journal::endl;
-        // release device memory
-        cudaFree(dAverage);
         // and bail
-        return nullptr;
+        throw std::runtime_error(description);
     }
-    // report the timing
-    tlog
-        << pyre::journal::at(__HERE__)
-        << "averaging kernel: " << 1e6 * timer.read() << " μs"
-        << pyre::journal::endl;
 
-    // hand the hyper-grid memory to the caller
-    return dAverage;
+    // all done
+    return;
 }
 
 
 // the SAT generation kernel
-__global__ static
+template <typename value_t>
+__global__
 void
-avg(const cell_t * dSAT,
+_avg(const value_t * dSAT,
       std::size_t tiles,     // the total number of target tiles
       std::size_t tgtDim,    // the shape of each target tile
       std::size_t corDim,    // the shape of each grid
-      cell_t * dAverage)
+      value_t * dAverage)
 {
     // build the workload descriptors
     // global

@@ -9,117 +9,80 @@
 
 // configuration
 #include <portinfo>
+// STL
+#include <complex>
 // cuda
 #include <cuda_runtime.h>
 #include <cooperative_groups.h>
-// pull the declarations
-#include "public.h"
-
-
-// local alias for the worker cell tupe
-using cell_t = ampcor::cuda::correlators::CUDA::cell_type;
+// pyre
+#include <pyre/journal.h>
+// local declarations
+#include "kernels.h"
 
 
 // the SAT generation kernel
+template <typename value_t = float>
 __global__
 static void
-sat(const cell_t * dArena,
+_sat(const value_t * dArena,
     std::size_t stride, std::size_t rcells, std::size_t tdim,
-    cell_t * dSAT);
+    value_t * dSAT);
 
 
 // implementation
-auto
-ampcor::cuda::correlators::CUDA::
-_newSAT(const cell_type * dArena) const -> cell_type *
+void
+ampcor::cuda::kernels::
+sat(const float * dArena,
+    std::size_t pairs, std::size_t refCells, std::size_t tgtCells, std::size_t tgtDim,
+    float * dSAT)
 {
-    // make a timer
-    timer_t timer("ampcor.cuda");
     // make a channel
     pyre::journal::info_t channel("ampcor.cuda");
-    // and another for reporting timings
-    pyre::journal::info_t tlog("ampcor.cuda.timings");
-
-    // build sum area tables for the target tiles
-    // find a spot
-    cell_type * dSAT = nullptr;
-    // the total number of cells in the SAT hyper-grid
-    auto size = _pairs * _tgtCells;
-    // the amount of memory needed to store them
-    auto footprint = size * sizeof(cell_type);
-    // allocate memory
-    cudaError_t status = cudaMallocManaged(&dSAT, footprint);
-    // if something went wrong
-    if (status != cudaSuccess) {
-        // make a channel
-        pyre::journal::error_t channel("ampcor.cuda");
-        // complain
-        channel
-            << pyre::journal::at(__HERE__)
-            << "while allocating device memory for the sum area tables: "
-            << cudaGetErrorName(status) << " (" << status << ")"
-            << pyre::journal::endl;
-        // bail
-        return nullptr;
-    }
-    // show me
-    channel
-        << pyre::journal::at(__HERE__)
-        << "allocated an arena of " << footprint << " bytes for the sum area tables at "
-        << dSAT
-        << pyre::journal::endl;
 
     // to compute the SAT for each target tile, we launch as many thread blocks as there are
     // target tiles
-    std::size_t B = _pairs;
+    std::size_t B = pairs;
     // the number of threads per block is determined by the shape of the target tile
-    std::size_t T = _tgtShape[1];
+    std::size_t T = tgtDim;
     // show me
     channel
         << pyre::journal::at(__HERE__)
         << "launching " << B << " blocks of " << T
         << " threads each to compute SATs for the target tiles"
         << pyre::journal::endl;
-    // start the clock
-    timer.reset().start();
+
     // launch the SAT kernel
-    sat <<<B,T>>> (dArena, _refCells+_tgtCells, _refCells, _tgtShape[0], dSAT);
+    _sat <<<B,T>>> (dArena, refCells+tgtCells, refCells, tgtDim, dSAT);
     // wait for the device to finish
-    status = cudaDeviceSynchronize();
-    // stop the clock
-    timer.stop();
+    cudaError_t status = cudaDeviceSynchronize();
     // if something went wrong
     if (status != cudaSuccess) {
+        // form the error description
+        std::string description = cudaGetErrorName(status);
         // make a channel
         pyre::journal::error_t channel("ampcor.cuda");
         // complain
         channel
             << pyre::journal::at(__HERE__)
             << "while computing the sum area tables: "
-            << cudaGetErrorName(status) << " (" << status << ")"
+            << description << " (" << status << ")"
             << pyre::journal::endl;
-        // release device memory
-        cudaFree(dSAT);
         // bail
-        return nullptr;
+        throw std::runtime_error(description);
     }
-    // report the timing
-    tlog
-        << pyre::journal::at(__HERE__)
-        << "SAT generation kernel: " << 1e6 * timer.read() << " μs"
-        << pyre::journal::endl;
 
-    // hand the SAT hyper-grid memory to the caller
-    return dSAT;
+    // all done
+    return;
 }
 
 
 // the SAT generation kernel
-__global__ static
+template <typename value_t>
+__global__
 void
-sat(const cell_t * dArena,
+_sat(const value_t * dArena,
     std::size_t stride, std::size_t rcells, std::size_t tdim,
-    cell_t * dSAT)
+    value_t * dSAT)
 {
     // build the workload descriptors
     // global
@@ -144,7 +107,7 @@ sat(const cell_t * dArena,
     std::size_t write = b*tdim*tdim + t*tdim;
 
     // initialize the partial sum
-    cell_t sum = 0;
+    value_t sum = 0;
 
     // run across the row
     for (auto slot = 0; slot < tdim; ++slot) {

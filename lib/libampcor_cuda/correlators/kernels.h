@@ -15,7 +15,6 @@
 namespace ampcor {
     namespace cuda {
         namespace kernels {
-
             // compute amplitudes of the tile pixels
             void detect(const std::complex<float> * cArena, std::size_t cells, float * rArena);
 
@@ -23,6 +22,24 @@ namespace ampcor {
             void zeroMean(float * rArena,
                           std::size_t pairs, std::size_t refDim, std::size_t cellsPerTilePair);
 
+            // build the sum area tables for the target tiles
+            void sat(const float * rArena,
+                     std::size_t pairs,
+                     std::size_t refCells, std::size_t tgtCells, std::size_t tgtDim,
+                     float * sat);
+
+            // compute the average amplitude for all possible placements of a reference shape
+            // within the search windows
+            void avg(const float * sat,
+                     std::size_t pairs, std::size_t tgtDim, std::size_t corDim,
+                     float * avg);
+
+            // compute the correlation matrix
+            void correlate(const float * rArena, const float * dAverage,
+                           std::size_t pairs,
+                           std::size_t refCells, std::size_t tgtCells, std::size_t corCells,
+                           std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
+                           float * dCorrelation);
         }
     }
 }

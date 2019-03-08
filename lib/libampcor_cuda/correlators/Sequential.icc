@@ -86,10 +86,13 @@ Sequential(size_type pairs, const layout_type & refLayout, const layout_type & t
     _pairs{pairs},
     _refLayout{ refLayout },
     _tgtLayout{ tgtLayout },
+    _corLayout{ tgtLayout.shape() - refLayout.shape() + index_type::fill(1) },
     _refCells{ _refLayout.size() },
     _tgtCells{ _tgtLayout.size() },
+    _corCells{ _corLayout.size() },
     _refFootprint{ _refCells * sizeof(cell_type) },
     _tgtFootprint{ _tgtCells * sizeof(cell_type) },
+    _corFootprint{ _corCells * sizeof(value_type) }, // the correlation matrix is real...
     _arena{ new cell_type[ _pairs * (_refCells+_tgtCells) ] }
 {
     // compute the footprint
@@ -261,7 +264,7 @@ void
 ampcor::cuda::correlators::Sequential<raster_t>::
 _zeroMean(value_type * rArena) const
 {
-    // get the layout of the target tiles; assume they are square
+    // get the layout of the reference tiles; assume they are square
     auto refExt = _refLayout.shape()[0];
     // engage
     kernels::zeroMean(rArena, _pairs, refExt, _refCells + _tgtCells);
@@ -276,10 +279,156 @@ auto
 ampcor::cuda::correlators::Sequential<raster_t>::
 _sat(const value_type * rArena) const -> value_type *
 {
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
+
     // grab a spot for the sat tables
-    value_type * sat;
+    value_type * sat = nullptr;
+
+    // the total number of cells in the SAT hypergrid
+    auto cells = _pairs * _tgtCells;
+    // the amount of memory needed to store them
+    auto footprint = _pairs * _tgtFootprint;;
+    // allocate memory
+    cudaError_t status = cudaMallocManaged(&sat, footprint);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while allocating memory for the sum area tables: "
+            << cudaGetErrorName(status) << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::bad_alloc();
+    }
+    // otherwise, show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "allocated an arena of " << footprint << " bytes for the sum area tables at "
+        << sat
+        << pyre::journal::endl;
+
+    // compute the layout of the reference tiles; assume they are square
+    auto refDim = _refLayout.shape()[0];
+    // compute the layout of the target tiles; assume they are square
+    auto tgtDim = _tgtLayout.shape()[0];
+    // engage
+    kernels::sat(rArena, _pairs, _refCells, _tgtCells, tgtDim, sat);
+
     // all done
     return sat;
+}
+
+
+// compute the average values for all possible placements of the reference shape within the
+// target tile
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+_averages(const value_type * rArena) const -> value_type *
+{
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
+
+    // pick a spot for the table of amplitude averages
+    value_type * avg = nullptr;
+    // compute the total number of cells in the amplitude hyper-grid
+    auto cells = _pairs * _corCells;
+    // and the amount of memory needed to store them
+    auto footprint = _pairs * _corFootprint;
+    // allocate memory on the device
+    cudaError_t status = cudaMallocManaged(&avg, footprint);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // get the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while allocating device memory for the table of target amplitude averages: "
+            << description << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::bad_alloc();
+    }
+    // show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "allocated an arena of " << footprint << " bytes for the target amplitude averages at "
+        << avg
+        << pyre::journal::endl;
+
+    // get the dimension of the target tiles
+    auto tgtDim = _tgtLayout.shape()[0];
+    // get the dimensions of the correlation matrix
+    auto corDim = _corLayout.shape()[0];
+    // engage
+    kernels::avg(rArena, _pairs, tgtDim, corDim, avg);
+
+    // all done
+    return avg;
+}
+
+
+// compute the correlation surface
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+_correlate(const value_type * rArena, const value_type * averages) const -> value_type *
+{
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
+
+    // pick a spot for the correlation matrix
+    value_type * dCorrelation = nullptr;
+    // compute the total number of cells in the amplitude hyper-grid
+    auto size = _pairs * _corCells;
+    // and the amount of memory needed to store them
+    auto footprint = _pairs * _corFootprint;
+    // allocate memory on the device
+    cudaError_t status = cudaMallocManaged(&dCorrelation, footprint);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // get the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while allocating device memory for the correlation matrix: "
+            << description << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::bad_alloc();
+    }
+    // show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "allocated " << footprint << " bytes for the correlation matrix at "
+        << dCorrelation
+        << pyre::journal::endl;
+
+    // get the dimension of the reference tiles
+    auto refDim = _refLayout.shape()[0];
+    // get the dimension of the target tiles
+    auto tgtDim = _tgtLayout.shape()[0];
+    // get the dimension of the correlation matrix
+    auto corDim = _corLayout.shape()[0];
+
+    // engage
+    kernels::correlate(rArena, averages,
+                       _pairs, _refCells, _tgtCells, _corCells,
+                       refDim, tgtDim, corDim,
+                       dCorrelation);
+
+    // all done
+    return dCorrelation;
 }
 
 
