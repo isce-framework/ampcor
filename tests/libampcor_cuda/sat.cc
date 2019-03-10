@@ -188,13 +188,13 @@ int main() {
         << pyre::journal::endl;
 
     // make room for the results
-    auto results = new value_t[cells];
+    auto satResults = new value_t[pairs * tgtCells];
     // compute the result footprint
-    auto rFootprint = pairs * tgtCells * sizeof(value_t);
+    auto satFootprint = pairs * tgtCells * sizeof(value_t);
     // start the clock
     timer.reset().start();
     // copy the results over
-    cudaError_t status = cudaMemcpy(results, sat, rFootprint, cudaMemcpyDeviceToHost);
+    cudaError_t status = cudaMemcpy(satResults, sat, satFootprint, cudaMemcpyDeviceToHost);
     // stop the clock
     timer.stop();
     // if something went wrong
@@ -212,16 +212,15 @@ int main() {
         // and bail
         throw std::runtime_error(description);
     }
-
     // get the duration
-    auto rDuration = timer.read();
+    auto satDuration = timer.read();
     // compute the transfer rate
-    auto rRate = rFootprint / rDuration * Gb;
+    auto satRate = satFootprint / satDuration * Gb;
     // show me
     tlog
         << pyre::journal::at(__HERE__)
-        << "moving the results to the host: " << 1e3 * rDuration << " ms"
-        << ", at " << rRate << " Gb/s"
+        << "moving SATs to the host: " << 1e3 * satDuration << " ms"
+        << ", at " << satRate << " Gb/s"
         << pyre::journal::endl;
 
     // start the clock
@@ -236,7 +235,7 @@ int main() {
         // compute the sum
         auto expected = std::accumulate(begin, end, 0.0);
         // get the value form the LRC of the corresponding SAT
-        auto computed = results[(pid+1)*tgtDim*tgtDim - 1];
+        auto computed = satResults[(pid+1)*tgtDim*tgtDim - 1];
         // compute the difference
         auto mismatch = std::abs(1.0-computed/expected);
         // if the two don't match within 10 float epsilon
@@ -292,7 +291,7 @@ int main() {
             // find the SAT that corresponds to this pid and print it
             for (auto idx=0; idx < tgtDim; ++idx) {
                 for (auto jdx=0; jdx < tgtDim; ++jdx) {
-                    channel << results[pid*tgtDim*tgtDim + idx*tgtDim + jdx] << " ";
+                    channel << satResults[pid*tgtDim*tgtDim + idx*tgtDim + jdx] << " ";
                 }
                 channel << pyre::journal::newline;
             }
@@ -304,7 +303,7 @@ int main() {
     cudaFree(sat);
     cudaFree(rArena);
     cudaFree(cArena);
-    delete [] results;
+    delete [] satResults;
 
     // all done
     return 0;
