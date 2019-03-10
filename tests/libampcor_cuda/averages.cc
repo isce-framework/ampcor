@@ -118,7 +118,7 @@ int main() {
             // and fill it
             for (auto idx : ref.layout()) {
                 // with random number pulled from the normal distribution
-                ref[idx] = 1.0; //normal(rng);
+                ref[idx] = normal(rng);
             }
             // make a view over the reference tile
             auto rview = ref.constview();
