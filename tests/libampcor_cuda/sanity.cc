@@ -32,7 +32,7 @@ int main() {
     // sign in
     channel
         << pyre::journal::at(__HERE__)
-        << "sanity check for the cuda ampcor task manager"
+        << "test: sanity check for the cuda ampcor task manager"
         << pyre::journal::endl;
 
     // the number of pairs
