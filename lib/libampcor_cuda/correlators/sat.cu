@@ -37,7 +37,7 @@ sat(const float * dArena,
     float * dSAT)
 {
     // make a channel
-    pyre::journal::info_t channel("ampcor.cuda");
+    pyre::journal::debug_t channel("ampcor.cuda");
 
     // to compute the SAT for each target tile, we launch as many thread blocks as there are
     // target tiles

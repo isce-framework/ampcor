@@ -23,17 +23,22 @@
 // type aliases
 // my value type
 using value_t = float;
+// my pixel type
+using pixel_t = std::complex<value_t>;
 // my raster type
-using slc_t = pyre::grid::simple_t<2, std::complex<value_t>>;
+using slc_t = pyre::grid::simple_t<2, pixel_t>;
 // the correlator
 using correlator_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
 // driver
 int main() {
+    // number of gigabytes per byte
+    const auto Gb = 1.0/(1024*1024*1024);
+
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
-    pyre::journal::info_t tlog("ampcor.cuda.tlog");
+    pyre::journal::debug_t tlog("ampcor.cuda.tlog");
 
     // make a channel for logging progress
     pyre::journal::debug_t channel("ampcor.cuda");
@@ -42,9 +47,6 @@ int main() {
         << pyre::journal::at(__HERE__)
         << "setting up the correlation plan with the cuda ampcor task manager"
         << pyre::journal::endl;
-
-    // number of gigabytes per byte
-    const auto Gb = 1.0/(1024*1024*1024);
 
     // the reference tile extent
     int refDim = 128;
@@ -57,13 +59,15 @@ int main() {
 
     // the number of pairs
     auto pairs = placements*placements;
-    // the number of cells in each pair
-    auto cellsPerPair = refDim*refDim + tgtDim*tgtDim;
 
-    // the total number of target cells
-    auto tgtCells = pairs * tgtDim*tgtDim;
+    // the number of cells in a reference tile
+    auto refCells = refDim * refDim;
+    // the number of cells in a target tile
+    auto tgtCells = tgtDim * tgtDim;
+    // the number of cells per pair
+    auto cellsPerPair = refCells + tgtCells;
     // the total number of cells
-    auto cells = pairs * (refDim*refDim + tgtDim*tgtDim);
+    auto cells = pairs * cellsPerPair;
 
     // the reference shape
     slc_t::shape_type refShape = {refDim, refDim};
@@ -93,7 +97,7 @@ int main() {
     // a random number generator
     std::mt19937 rng { dev() };
     // use them to build a normal distribution
-    std::normal_distribution<float> normal {};
+    std::normal_distribution<value_t> normal {};
 
     // start the clock
     timer.reset().start();
@@ -186,7 +190,7 @@ int main() {
     // make room for the results
     auto results = new value_t[cells];
     // compute the result footprint
-    auto rFootprint = tgtCells * sizeof(value_t);
+    auto rFootprint = pairs * tgtCells * sizeof(value_t);
     // start the clock
     timer.reset().start();
     // copy the results over
@@ -222,7 +226,7 @@ int main() {
 
     // start the clock
     timer.reset().start();
-    // verify: go through all the tables and verify that the lower right hand corner contains
+    // verify: go through all the tables and check that the lower right hand corner contains
     // the sum of all the tile elements
     for (auto pid = 0; pid < pairs; ++pid) {
         // compute the start of this tile
