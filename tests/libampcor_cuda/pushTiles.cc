@@ -18,17 +18,24 @@
 #include <ampcor_cuda/correlators.h>
 
 // type aliases
+// my value type
+using value_t = float;
+// the pixel type
+using pixel_t = std::complex<value_t>;
 // my raster type
-using slc_t = pyre::grid::simple_t<2, std::complex<float>>;
+using slc_t = pyre::grid::simple_t<2, pixel_t>;
 // the correlator
 using correlator_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
 // driver
 int main() {
+    // number of gigabytes per byte
+    const auto Gb = 1.0/(1024*1024*1024);
+
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
-    pyre::journal::info_t tlog("ampcor.cuda.tlog");
+    pyre::journal::debug_t tlog("ampcor.cuda.tlog");
 
     // make a channel for logging progress
     pyre::journal::debug_t channel("ampcor.cuda");
@@ -43,11 +50,20 @@ int main() {
     // the margin around the reference tile
     int margin = 32;
     // therefore, the target tile extent
-    int tgtExt = refExt + 2*margin;
+    auto tgtExt = refExt + 2*margin;
     // the number of possible placements of the reference tile within the target tile
-    int placements = 2*margin + 1;
+    auto placements = 2*margin + 1;
     // the number of pairs
-    slc_t::size_type pairs = placements*placements;
+    auto pairs = placements*placements;
+
+    // the number of cells in a reference tile
+    auto refCells = refExt * refExt;
+    // the number of cells in a target tile
+    auto tgtCells = tgtExt * tgtExt;
+    // the number of cells per pair
+    auto cellsPerPair = refCells + tgtCells;
+    // the total number of cells
+    auto cells = pairs * cellsPerPair;
 
     // the reference shape
     slc_t::shape_type refShape = {refExt, refExt};
@@ -111,15 +127,15 @@ int main() {
     // start the clock
     timer.reset().start();
     // push the data to the device
-    auto dArena = c._push();
+    auto cArena = c._push();
     // stop the clock
     timer.stop();
     // get the duration
     auto duration = timer.read();
     // get the payload
-    auto footprint = pairs * sizeof(slc_t::cell_type) * (refExt*refExt + tgtExt*tgtExt);
+    auto footprint = cells * sizeof(slc_t::cell_type);
     // compute the transfer rate in Gb/s
-    auto rate = footprint / duration / 1024/1024/1024;
+    auto rate = footprint / duration * Gb;
     // show me
     tlog
         << pyre::journal::at(__HERE__)
@@ -127,8 +143,118 @@ int main() {
         << ", at " << rate << " Gb/s"
         << pyre::journal::endl;
 
+    // make room for the results
+    auto * results = new pixel_t[cells];
+    // start the clock
+    timer.reset().start();
+    // copy the results over
+    cudaError_t status = cudaMemcpy(results, cArena, footprint, cudaMemcpyDeviceToHost);
+    // stop the clock
+    timer.stop();
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // get the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while retrieving the results: "
+            << description << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error(description);
+    }
+
+    // get the duration
+    auto rDuration = timer.read();
+    // compute the transfer rate
+    auto rRate = footprint / rDuration * Gb;
+    // show me
+    tlog
+        << pyre::journal::at(__HERE__)
+        << "moving the results to the host: " << 1e3 * rDuration << " ms"
+        << ", at " << rRate << " Gb/s"
+        << pyre::journal::endl;
+
+    // verify
+    // start the clock
+    timer.reset().start();
+    // go through all pairs
+    for (auto i=0; i<placements; ++i) {
+        for (auto j=0; i<placements; ++i) {
+            // compute the pair id
+            auto pid = i*placements + j;
+            // get the reference raster
+            auto ref = results + pid*cellsPerPair;
+            // verify its contents
+            for (auto idx=0; idx<refExt; ++idx) {
+                for (auto jdx=0; jdx<refExt; ++jdx) {
+                    // the expected value
+                    pixel_t expected = pid;
+                    // the actual value
+                    pixel_t actual = ref[idx*refExt + jdx];
+                    // compute the mismatch
+                    auto mismatch = std::abs(expected-actual)/std::abs(expected);
+                    // if there is a mismatch
+                    if (mismatch > std::numeric_limits<value_t>::epsilon()) {
+                        // make a channel
+                        pyre::journal::error_t error("ampcor.cuda");
+                        // complain
+                        error
+                            << pyre::journal::at(__HERE__)
+                            << "ref[" << pid << "; " << idx << ", " << jdx << "] : mismatch: "
+                            << "expected: " << expected
+                            << ", actual: " << actual
+                            << pyre::journal::endl;
+                        // and bail
+                        throw std::runtime_error("verification error");
+                    }
+                }
+            }
+
+            // get the target raster
+            auto tgt = results + pid*cellsPerPair + refCells;
+            // verify its contents
+            for (auto idx=0; idx<refExt; ++idx) {
+                for (auto jdx=0; jdx<refExt; ++jdx) {
+                    // the bounds of the copy of the ref tile in the tgt tile
+                    auto within = (idx >= i && idx < i+refExt && jdx >= j && idx < j+refExt);
+                    // the expected value depends on whether we are within the magic subtile
+                    pixel_t expected = within ? ref[idx*refExt + jdx] : 0;
+                    // the actual value
+                    pixel_t actual = tgt[idx*tgtExt + jdx];
+                    // compute the mismatch
+                    auto mismatch = std::abs(expected-actual)/std::abs(actual);
+                    // if there is a mismatch
+                    if (mismatch > std::numeric_limits<value_t>::epsilon()) {
+                        // make a channel
+                        pyre::journal::error_t error("ampcor.cuda");
+                        // complain
+                        error
+                            << pyre::journal::at(__HERE__)
+                            << "tgt[" << pid << "; " << idx << ", " << jdx << "] : mismatch: "
+                            << "expected: " << expected
+                            << ", actual: " << actual
+                            << pyre::journal::endl;
+                        // and bail
+                        throw std::runtime_error("verification error");
+                    }
+                }
+            }
+        }
+    }
+    // stop the clock
+    timer.stop();
+    // show me
+    tlog
+        << pyre::journal::at(__HERE__)
+        << "verifying reference dataset: " << 1e3 * timer.read() << " ms"
+        << pyre::journal::endl;
+
     // clean up
-    cudaFree(dArena);
+    cudaFree(cArena);
 
     // all done
     return 0;
