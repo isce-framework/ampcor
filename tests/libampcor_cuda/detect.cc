@@ -33,7 +33,7 @@ int main() {
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
-    pyre::journal::info_t tlog("ampcor.cuda.tlog");
+    pyre::journal::debug_t tlog("ampcor.cuda.tlog");
 
     // make a channel for logging progress
     pyre::journal::debug_t channel("ampcor.cuda");
