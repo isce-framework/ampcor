@@ -34,7 +34,7 @@ ampcor::cuda::kernels::
 zeroMean(float * rArena, std::size_t pairs, std::size_t refDim, std::size_t cellsPerTilePair)
 {
     // make a channel
-    pyre::journal::info_t channel("ampcor.cuda");
+    pyre::journal::debug_t channel("ampcor.cuda");
     // show me
     channel
         << pyre::journal::at(__HERE__)

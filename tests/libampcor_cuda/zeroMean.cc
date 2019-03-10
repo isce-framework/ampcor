@@ -10,6 +10,7 @@
 #include <portinfo>
 // STL
 #include <numeric>
+#include <random>
 // cuda
 #include <cuda_runtime.h>
 // support
@@ -21,9 +22,11 @@
 
 // type aliases
 // my value type
-using value_type = float;
+using value_t = float;
+// my pixel type
+using pixel_t = std::complex<value_t>;
 // my raster type
-using slc_t = pyre::grid::simple_t<2, std::complex<value_type>>;
+using slc_t = pyre::grid::simple_t<2, pixel_t>;
 // the correlator
 using correlator_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
@@ -35,14 +38,14 @@ int main() {
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
-    pyre::journal::info_t tlog("ampcor.cuda.tlog");
+    pyre::journal::debug_t tlog("ampcor.cuda.tlog");
 
     // make a channel for logging progress
     pyre::journal::debug_t channel("ampcor.cuda");
     // show me
     channel
         << pyre::journal::at(__HERE__)
-        << "setting up the correlation plan with the cuda ampcor task manager"
+        << "test: adjusting the amplitudes of the reference tile to zero mean"
         << pyre::journal::endl;
 
     // the reference tile extent
@@ -56,11 +59,15 @@ int main() {
 
     // the number of pairs
     auto pairs = placements*placements;
+
+    // the number of cells in a reference tile
+    auto refCells = refExt * refExt;
+    // the number of cells in a target tile
+    auto tgtCells = tgtExt * tgtExt;
     // the number of cells in each pair
     auto cellsPerPair = refExt*refExt + tgtExt*tgtExt;
-
     // the total number of cells
-    auto cells = pairs * (refExt*refExt + tgtExt*tgtExt);
+    auto cells = pairs * cellsPerPair;
 
     // the reference shape
     slc_t::shape_type refShape = {refExt, refExt};
@@ -84,18 +91,28 @@ int main() {
         << "instantiating the manager: " << 1e3 * timer.read() << " ms"
         << pyre::journal::endl;
 
+    // we fill the reference tiles with random numbers
+    // make a device
+    std::random_device dev {};
+    // a random number generator
+    std::mt19937 rng { dev() };
+    // use them to build a normal distribution
+    std::normal_distribution<value_t> normal {};
+
     // start the clock
     timer.reset().start();
     // build reference tiles
     for (auto i=0; i<placements; ++i) {
         for (auto j=0; j<placements; ++j) {
-            // compute the pair id
-            int pid = i*placements + j;
-
             // make a reference raster
             slc_t ref(refLayout);
-            // fill it with the pair id
-            std::fill(ref.view().begin(), ref.view().end(), pid);
+            // and fill it
+            for (auto idx : ref.layout()) {
+                // with random number pulled from the normal distribution
+                ref[idx] = normal(rng);
+            }
+            // make a view over the reference tile
+            auto rview = ref.constview();
 
             // make a target tile
             slc_t tgt(tgtLayout);
@@ -108,6 +125,8 @@ int main() {
             // fill it with the contents of the reference tile for this pair
             std::copy(ref.view().begin(), ref.view().end(), view.begin());
 
+            // compute the pair id
+            int pid = i*placements + j;
             // add this pair to the correlator
             c.addReferenceTile(pid, ref.constview());
             c.addTargetTile(pid, tgt.constview());
@@ -156,7 +175,7 @@ int main() {
 
     // start the clock
     timer.reset().start();
-    // subtract the tile mean from each pixel
+    // subtract the tile mean from each pixel in the reference tile
     c._zeroMean(rArena);
     // stop the clock
     timer.stop();
@@ -169,9 +188,9 @@ int main() {
         << pyre::journal::endl;
 
     // make room for the results
-    auto * results = new value_type[cells];
+    auto * results = new value_t[cells];
     // compute the result footprint
-    auto rFootprint = cells * sizeof(value_type);
+    auto rFootprint = cells * sizeof(value_t);
     // start the clock
     timer.reset().start();
     // copy the results over
@@ -212,9 +231,9 @@ int main() {
         // compute the starting address of this tile
         auto mem = results + pid * cellsPerPair;
         // compute the mean of the tile
-        auto mean = std::accumulate(mem, mem+refExt*refExt, 0.0) / (refExt*refExt);
+        auto mean = std::accumulate(mem, mem+refCells, 0.0) / refCells;
         // verify it's near zero
-        if (std::abs(mean) > std::numeric_limits<float>::epsilon()) {
+        if (std::abs(mean) > 10 * std::numeric_limits<float>::epsilon()) {
             // make a channel
             pyre::journal::error_t error("ampcor.cuda");
             // complain
