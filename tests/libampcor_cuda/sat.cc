@@ -30,11 +30,6 @@ using correlator_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
 // driver
 int main() {
-
-    cudaSetDevice(6);
-    // number of gigabytes per byte
-    const auto Gb = 1.0/(1024*1024*1024);
-
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
@@ -47,6 +42,9 @@ int main() {
         << pyre::journal::at(__HERE__)
         << "setting up the correlation plan with the cuda ampcor task manager"
         << pyre::journal::endl;
+
+    // number of gigabytes per byte
+    const auto Gb = 1.0/(1024*1024*1024);
 
     // the reference tile extent
     int refDim = 128;
