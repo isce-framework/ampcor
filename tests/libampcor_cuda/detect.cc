@@ -19,14 +19,17 @@
 
 // type aliases
 // my value type
-using value_type = float;
+using value_t = float;
 // my raster type
-using slc_t = pyre::grid::simple_t<2, std::complex<value_type>>;
+using slc_t = pyre::grid::simple_t<2, std::complex<value_t>>;
 // the correlator
 using correlator_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
 // driver
 int main() {
+    // number of gigabytes per byte
+    const auto Gb = 1.0/(1024*1024*1024);
+
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
@@ -37,7 +40,7 @@ int main() {
     // show me
     channel
         << pyre::journal::at(__HERE__)
-        << "setting up the correlation plan with the cuda ampcor task manager"
+        << "test: computing the amplitude of the dataset"
         << pyre::journal::endl;
 
     // the reference tile extent
@@ -51,11 +54,15 @@ int main() {
 
     // the number of pairs
     auto pairs = placements*placements;
-    // the number of cells in each pair
-    auto cellsPerPair = refExt*refExt + tgtExt*tgtExt;
 
+    // the number of cells in a reference tile
+    auto refCells = refExt * refExt;
+    // the number of cells in a target tile
+    auto tgtCells = tgtExt * tgtExt;
+    // the number of cells per pair
+    auto cellsPerPair = refCells + tgtCells;
     // the total number of cells
-    auto cells = pairs * (refExt*refExt + tgtExt*tgtExt);
+    auto cells = pairs * cellsPerPair;
 
     // the reference shape
     slc_t::shape_type refShape = {refExt, refExt};
@@ -150,9 +157,9 @@ int main() {
         << pyre::journal::endl;
 
     // make room for the results
-    auto * results = new value_type[cells];
+    auto * results = new value_t[cells];
     // compute the result footprint
-    auto rFootprint = cells * sizeof(value_type);
+    auto rFootprint = cells * sizeof(value_t);
     // start the clock
     timer.reset().start();
     // copy the results over
