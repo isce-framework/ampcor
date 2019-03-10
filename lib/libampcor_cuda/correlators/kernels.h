@@ -31,7 +31,7 @@ namespace ampcor {
             // compute the average amplitude for all possible placements of a reference shape
             // within the search windows
             void avg(const float * sat,
-                     std::size_t pairs, std::size_t tgtDim, std::size_t corDim,
+                     std::size_t pairs, std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
                      float * avg);
 
             // compute the correlation matrix

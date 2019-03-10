@@ -25,7 +25,7 @@ template <typename value_t = float>
 __global__
 static void
 _avg(const value_t * sat,
-     std::size_t tiles, std::size_t tgtDim, std::size_t corDim,
+     std::size_t tiles, std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
      value_t * avg);
 
 
@@ -42,11 +42,11 @@ _avg(const value_t * sat,
 void
 ampcor::cuda::kernels::
 avg(const float * dSAT,
-    std::size_t pairs, std::size_t tgtDim, std::size_t corDim,
+    std::size_t pairs, std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
     float * dAverage)
 {
     // make a channel
-    pyre::journal::info_t channel("ampcor.cuda");
+    pyre::journal::debug_t channel("ampcor.cuda");
 
     // launch blocks of 256 threads
     auto T = 256;
@@ -57,10 +57,10 @@ avg(const float * dSAT,
         << pyre::journal::at(__HERE__)
         << "launching " << B << " blocks of " << T
         << " threads each to handle the " << pairs
-        << " UL corners of the hyper-grid of target amplitude averages"
+        << " entries of the hyper-grid of target amplitude averages"
         << pyre::journal::endl;
     // launch the kernels
-    _avg <<<B,T>>> (dSAT, pairs, tgtDim, corDim, dAverage);
+    _avg <<<B,T>>> (dSAT, pairs, refDim, tgtDim, corDim, dAverage);
     // wait for the kernels to finish
     cudaError_t status = cudaDeviceSynchronize();
     // check
@@ -90,6 +90,7 @@ __global__
 void
 _avg(const value_t * dSAT,
       std::size_t tiles,     // the total number of target tiles
+      std::size_t refDim,    // the shape of each reference tile
       std::size_t tgtDim,    // the shape of each target tile
       std::size_t corDim,    // the shape of each grid
       value_t * dAverage)
@@ -110,6 +111,9 @@ _avg(const value_t * dSAT,
         return;
     }
 
+    // compute the number of cells in each placements
+    auto refCells = refDim * refDim;
+
     // locate the beginning of my SAT table
     auto sat = dSAT + w*tgtDim*tgtDim;
     // locate the beginning of my table of averages
@@ -118,11 +122,13 @@ _avg(const value_t * dSAT,
     // go through all possible row offsets
     for (auto row = 0; row < corDim; ++row) {
         // the row limit of the tile
-        auto rowMax = row + corDim - 1;
+        // this depends on the shape of the reference tile
+        auto rowMax = row + refDim - 1;
         // go through all possible column offsets
         for (auto col = 0; col < corDim; ++col) {
             // the column limit of the tile
-            auto colMax = col + corDim - 1;
+            //  this depends on the shape of the reference tile
+            auto colMax = col + refDim - 1;
 
             // initialize the sum by reading the bottom right corner; it's guaranteed to be
             // within the SAT
@@ -147,7 +153,7 @@ _avg(const value_t * dSAT,
             }
 
             // compute the average value and store it
-            avg[row*corDim + col] = sum / (tgtDim*tgtDim);
+            avg[row*corDim + col] = sum / refCells;
         }
     }
 
