@@ -42,7 +42,7 @@ int main() {
     // show me
     channel
         << pyre::journal::at(__HERE__)
-        << "setting up the correlation plan with the cuda ampcor task manager"
+        << "test: moving the dataset to the device"
         << pyre::journal::endl;
 
     // the reference tile extent
