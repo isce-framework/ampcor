@@ -151,13 +151,43 @@ int main() {
                     // compute the mismatch
                     auto mismatch = std::abs(expected-actual)/std::abs(expected);
                     // if there is a mismatch
-                    if (mismatch > std::numeric_limits<float>::epsilon()) {
+                    if (mismatch > std::numeric_limits<value_t>::epsilon()) {
                         // make a channel
                         pyre::journal::error_t error("ampcor.cuda");
                         // complain
                         error
                             << pyre::journal::at(__HERE__)
                             << "ref[" << pid << "; " << idx << ", " << jdx << "] : mismatch: "
+                            << "expected: " << expected
+                            << ", actual: " << actual
+                            << pyre::journal::endl;
+                        // and bail
+                        throw std::runtime_error("verification error");
+                    }
+                }
+            }
+
+            // get the target raster
+            auto tgt = arena + pid*cellsPerPair + refCells;
+            // verify its contents
+            for (auto idx=0; idx<refExt; ++idx) {
+                for (auto jdx=0; jdx<refExt; ++jdx) {
+                    // the bounds of the copy of the ref tile in the tgt tile
+                    auto within = (idx >= i && idx < i+refExt && jdx >= j && idx < j+refExt);
+                    // the expected value depends on whether we are within the magic subtile
+                    pixel_t expected = within ? ref[idx*refExt + jdx] : 0;
+                    // the actual value
+                    pixel_t actual = tgt[idx*tgtExt + jdx];
+                    // compute the mismatch
+                    auto mismatch = std::abs(expected-actual)/std::abs(actual);
+                    // if there is a mismatch
+                    if (mismatch > std::numeric_limits<value_t>::epsilon()) {
+                        // make a channel
+                        pyre::journal::error_t error("ampcor.cuda");
+                        // complain
+                        error
+                            << pyre::journal::at(__HERE__)
+                            << "tgt[" << pid << "; " << idx << ", " << jdx << "] : mismatch: "
                             << "expected: " << expected
                             << ", actual: " << actual
                             << pyre::journal::endl;
