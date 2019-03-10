@@ -18,16 +18,18 @@
 // my raster type
 using slc_t = pyre::grid::simple_t<2, std::complex<float>>;
 // the correlator
-using correlator_t = ampcor::cuda::correlators::interim_t<slc_t>;
+using correlator_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
 // driver
 int main() {
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
+    // and a channel for reporting timings
+    pyre::journal::debug_t tlog("ampcor.cuda.tlog");
 
-    // make a channel
-    pyre::journal::info_t channel("ampcor.cuda");
-    // show me
+    // sign in
     channel
         << pyre::journal::at(__HERE__)
         << "sanity check for the cuda ampcor task manager"
@@ -44,11 +46,12 @@ int main() {
     timer.reset().start();
     // make a correlator
     correlator_t c(pairs, refShape, tgtShape);
+    // verify that its scratch space is allocated and accessible
+    auto arena = c.arena();
     // stop the clock
     timer.stop();
-
     // show me
-    channel
+    tlog
         << pyre::journal::at(__HERE__)
         << "instantiating the manager: " << 1e6 * timer.read() << " μs"
         << pyre::journal::endl;
