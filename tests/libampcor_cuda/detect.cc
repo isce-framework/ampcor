@@ -27,9 +27,6 @@ using correlator_t = ampcor::cuda::correlators::sequential_t<slc_t>;
 
 // driver
 int main() {
-    // pick a device
-    cudaSetDevice(7);
-
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
