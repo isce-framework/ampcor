@@ -111,13 +111,17 @@ _avg(const value_t * dSAT,
         return;
     }
 
-    // compute the number of cells in each placements
+    // compute the number of cells in a reference tile
     auto refCells = refDim * refDim;
+    // compute the number of cells in a target tile
+    auto tgtCells = tgtDim * tgtDim;
+    // compute the number of cells in each correlation matrix
+    auto corCells = corDim * corDim;
 
     // locate the beginning of my SAT table
-    auto sat = dSAT + w*tgtDim*tgtDim;
+    auto sat = dSAT + w*tgtCells;
     // locate the beginning of my table of averages
-    auto avg = dAverage + w*corDim*corDim;
+    auto avg = dAverage + w*corCells;
 
     // go through all possible row offsets
     for (auto row = 0; row < corDim; ++row) {
