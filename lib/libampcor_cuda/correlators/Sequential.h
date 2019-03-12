@@ -71,13 +71,13 @@ public:
     auto _push() const -> cell_type *;
     // compute the magnitude of the complex signal pixel-by-pixel
     auto _detect(const cell_type * cArena) const -> value_type *;
-    // adjust reference pixels by subtracting the tile mean
+    // subtract the mean from reference tiles and compute the square root of their variance
     auto _refStats(value_type * rArena) const -> value_type *;
     // compute the sum area tables for the target tiles
     auto _sat(const value_type * rArena) const -> value_type *;
-    // compute the average value of all possible placements of a tile the same size as the
-    // reference tile within the target
-    auto _averages(const value_type * rArena) const -> value_type *;
+    // compute the mean of all possible placements of a tile the same size as the reference
+    // tile within the target
+    auto _tgtStats(const value_type * sat) const -> value_type *;
     // correlate
     auto _correlate(const value_type * rArena, const value_type * averages) const -> value_type *;
 

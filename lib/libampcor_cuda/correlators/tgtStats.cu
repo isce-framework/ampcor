@@ -24,9 +24,9 @@
 template <typename value_t = float>
 __global__
 static void
-_avg(const value_t * sat,
-     std::size_t tiles, std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
-     value_t * avg);
+_tgtStats(const value_t * sat,
+          std::size_t tiles, std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
+          value_t * stats);
 
 
 // implementation
@@ -41,15 +41,15 @@ _avg(const value_t * sat,
 // trivialized using ghost cells around the search window boundary, but the memory cost is high
 void
 ampcor::cuda::kernels::
-avg(const float * dSAT,
-    std::size_t pairs, std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
-    float * dAverage)
+tgtStats(const float * dSAT,
+         std::size_t pairs, std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
+         float * dStats)
 {
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
 
-    // launch blocks of 256 threads
-    auto T = 256;
+    // launch blocks of T threads
+    auto T = 128;
     // in as many blocks as it takes to handle all pairs
     auto B = pairs / T + (pairs % T ? 1 : 0);
     // show me
@@ -60,7 +60,7 @@ avg(const float * dSAT,
         << " entries of the hyper-grid of target amplitude averages"
         << pyre::journal::endl;
     // launch the kernels
-    _avg <<<B,T>>> (dSAT, pairs, refDim, tgtDim, corDim, dAverage);
+    _tgtStats <<<B,T>>> (dSAT, pairs, refDim, tgtDim, corDim, dStats);
     // wait for the kernels to finish
     cudaError_t status = cudaDeviceSynchronize();
     // check
@@ -88,12 +88,12 @@ avg(const float * dSAT,
 template <typename value_t>
 __global__
 void
-_avg(const value_t * dSAT,
+_tgtStats(const value_t * dSAT,
       std::size_t tiles,     // the total number of target tiles
       std::size_t refDim,    // the shape of each reference tile
       std::size_t tgtDim,    // the shape of each target tile
       std::size_t corDim,    // the shape of each grid
-      value_t * dAverage)
+      value_t * dStats)
 {
     // build the workload descriptors
     // global
@@ -120,8 +120,8 @@ _avg(const value_t * dSAT,
 
     // locate the beginning of my SAT table
     auto sat = dSAT + w*tgtCells;
-    // locate the beginning of my table of averages
-    auto avg = dAverage + w*corCells;
+    // locate the beginning of my stats table
+    auto stats = dStats + w*corCells;
 
     // go through all possible row offsets
     for (auto row = 0; row < corDim; ++row) {
@@ -156,8 +156,10 @@ _avg(const value_t * dSAT,
                 sum += sat[(row-1)*tgtDim + (col-1)];
             }
 
+            // compute the offset that brings us to this placement in this tile
+            auto offset = row*corDim + col;
             // compute the average value and store it
-            avg[row*corDim + col] = sum / refCells;
+            stats[offset] = sum / refCells;
         }
     }
 

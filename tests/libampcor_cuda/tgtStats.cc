@@ -198,7 +198,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the average amplitude of all possible ref shaped sub-tiles in the target tile
-    auto avg = c._averages(sat);
+    auto tgtStats = c._tgtStats(sat);
     // stop the clock
     timer.stop();
     // get the duration
@@ -284,13 +284,16 @@ int main() {
         << pyre::journal::endl;
 
     // finally, we need the hyper-grid with the average values
-    auto avgResults = new value_t[pairs * corCells];
-    // compute the result footprint
-    auto avgFootprint = pairs * corCells * sizeof(value_t);
+    // the total number of cells in the stats array: 2 floats per placement per pair
+    auto statCells = pairs * corCells;
+    // make room
+    auto statResults = new value_t[statCells];
+    // compute the memory footprint
+    auto statFootprint = statCells * sizeof(value_t);
     // start the clock
     timer.reset().start();
     // copy the results over
-    status = cudaMemcpy(avgResults, avg, avgFootprint, cudaMemcpyDeviceToHost);
+    status = cudaMemcpy(statResults, tgtStats, statFootprint, cudaMemcpyDeviceToHost);
     // stop the clock
     timer.stop();
     // if something went wrong
@@ -309,17 +312,19 @@ int main() {
         throw std::runtime_error(description);
     }
     // get the duration
-    auto avgDuration = timer.read();
+    auto statDuration = timer.read();
     // compute the transfer rate
-    auto avgRate = avgFootprint / avgDuration * Gb;
+    auto statRate = statFootprint / statDuration * Gb;
     // show me
     tlog
         << pyre::journal::at(__HERE__)
-        << "moving the hyper-grid of averages to the host: " << 1e3 * avgDuration << " ms"
-        << ", at " << avgRate << " Gb/s"
+        << "moving the hyper-grid of averages to the host: " << 1e3 * statDuration << " ms"
+        << ", at " << statRate << " Gb/s"
         << pyre::journal::endl;
 
     // compare expected with computed
+    // set up a tolerance
+    auto tolerance = 10 * std::numeric_limits<value_t>::epsilon();
     // start the clock
     timer.reset().start();
     // go through all the pairs
@@ -329,33 +334,35 @@ int main() {
         // make a tile
         tile_t tgt { tgtLayout, tgtStart };
         // locate the table of mean values for this pair
-        value_t * avgs = avgResults + pid*corCells;
+        value_t * stats = statResults + pid*corCells;
         // go through all the placements
         for (auto i=0; i<corDim; ++i) {
             for (auto j=0; j<corDim; ++j) {
+                // the offset to the stats for this tile for this placement
+                auto offset = i*corDim + j;
                 // slice the target tile
                 auto slice = tgt.layout().slice({i,j}, {i+refDim, j+refDim});
                 // make a view
                 auto view = tgt.constview(slice);
                 // use it to compute the average value in the slice
-                auto expected = std::accumulate(view.begin(), view.end(), 0.0) / refCells;
+                auto expectedMean = std::accumulate(view.begin(), view.end(), 0.0) / refCells;
                 // read the computed value
-                auto computed = avgs[i*corDim + j];
+                auto computedMean = stats[offset];
                 // compute the mismatch
-                auto mismatch = std::abs(1.0-expected/computed);
+                auto mismatchMean = std::abs(1.0-expectedMean/computedMean);
                 // verify it's near zero
-                if (std::abs(mismatch) > 10 * std::numeric_limits<float>::epsilon()) {
+                if (std::abs(mismatchMean) > tolerance) {
                     // make a channel
                     pyre::journal::error_t error("ampcor.cuda");
                     // complain
-                    channel
+                    error
                         << pyre::journal::at(__HERE__)
-                        << "mismatch at tile [" << pid << ":" << i << "," << j << "]: "
-                        << "expected: " << expected
-                        << ", computed: " << computed
+                        << "mean mismatch at tile [" << pid << ":" << i << "," << j << "]: "
+                        << "expected: " << expectedMean
+                        << ", computed: " << computedMean
                         << pyre::journal::endl;
                     // bail
-                    // throw std::runtime_error("verification error!");
+                    throw std::runtime_error("mean verification error!");
                 }
             }
         }
@@ -407,7 +414,7 @@ int main() {
             // find the AVG that corresponds to this pid and print it
             for (auto idx=0; idx < corDim; ++idx) {
                 for (auto jdx=0; jdx < corDim; ++jdx) {
-                    channel << avgResults[pid*corCells + idx*corDim + jdx] << " ";
+                    channel << statResults[pid*corCells + idx*corDim + jdx] << " ";
                 }
                 channel << pyre::journal::newline;
             }
@@ -416,12 +423,12 @@ int main() {
     }
 
     // clean up
-    cudaFree(avg);
+    cudaFree(tgtStats);
     cudaFree(sat);
     cudaFree(rArena);
     cudaFree(cArena);
 
-    delete [] avgResults;
+    delete [] statResults;
     delete [] satResults;
     delete [] ampResults;
 

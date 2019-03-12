@@ -345,19 +345,18 @@ _sat(const value_type * rArena) const -> value_type *
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_averages(const value_type * dSAT) const -> value_type *
+_tgtStats(const value_type * dSAT) const -> value_type *
 {
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
 
     // pick a spot for the table of amplitude averages
-    value_type * avg = nullptr;
-    // compute the total number of cells in the amplitude hyper-grid
-    auto cells = _pairs * _corCells;
-    // and the amount of memory needed to store them
+    value_type * stats = nullptr;
+    // compute the amount of memory needed to store the target tile statistics: we store the
+    // mean per placement per tile
     auto footprint = _pairs * _corFootprint;
     // allocate memory on the device
-    cudaError_t status = cudaMallocManaged(&avg, footprint);
+    cudaError_t status = cudaMallocManaged(&stats, footprint);
     // if something went wrong
     if (status != cudaSuccess) {
         // get the error description
@@ -377,7 +376,7 @@ _averages(const value_type * dSAT) const -> value_type *
     channel
         << pyre::journal::at(__HERE__)
         << "allocated an arena of " << footprint << " bytes for the target amplitude averages at "
-        << avg
+        << stats
         << pyre::journal::endl;
 
     // get the dimension of the reference tiles
@@ -387,10 +386,10 @@ _averages(const value_type * dSAT) const -> value_type *
     // get the dimensions of the correlation matrix
     auto corDim = _corLayout.shape()[0];
     // engage
-    kernels::avg(dSAT, _pairs, refDim, tgtDim, corDim, avg);
+    kernels::tgtStats(dSAT, _pairs, refDim, tgtDim, corDim, stats);
 
     // all done
-    return avg;
+    return stats;
 }
 
 
