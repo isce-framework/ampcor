@@ -123,6 +123,10 @@ _zeroMean(value_t * rArena, std::size_t refDim, std::size_t cellsPerTilePair)
     std::size_t t = threadIdx.x;       // my thread id
     // auto w = b*T + t;               // my worker id
 
+    // N.B.: do not be tempted to terminate early threads that have no assigned workload; their
+    // participation is required to make sure that shared memory is properly zeored out for the
+    // out of bounds accesses
+
     // access to my shared memory
     extern __shared__ value_t scratch[];
     // handle to my thread block group
