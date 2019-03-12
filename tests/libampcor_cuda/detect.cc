@@ -203,13 +203,13 @@ int main() {
             // make a channel
             pyre::journal::error_t error("ampcor.cuda");
             // complain
-            channel
+            error
                 << pyre::journal::at(__HERE__)
                 << "mismatch at cell " << cell << ": "
                 << "|" << arena[cell] << "| != " << results[cell]
                 << pyre::journal::endl;
             // bail
-            break;
+            throw std::runtime_error("verification error");
         }
     }
     // stop the clock
