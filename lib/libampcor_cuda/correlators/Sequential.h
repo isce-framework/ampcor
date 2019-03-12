@@ -72,7 +72,7 @@ public:
     // compute the magnitude of the complex signal pixel-by-pixel
     auto _detect(const cell_type * cArena) const -> value_type *;
     // adjust reference pixels by subtracting the tile mean
-    void _zeroMean(value_type * rArena) const;
+    auto _refStats(value_type * rArena) const -> value_type *;
     // compute the sum area tables for the target tiles
     auto _sat(const value_type * rArena) const -> value_type *;
     // compute the average value of all possible placements of a tile the same size as the

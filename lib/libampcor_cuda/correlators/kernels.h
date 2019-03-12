@@ -19,8 +19,9 @@ namespace ampcor {
             void detect(const std::complex<float> * cArena, std::size_t cells, float * rArena);
 
             // subtract the tile mean from each reference pixel
-            void zeroMean(float * rArena,
-                          std::size_t pairs, std::size_t refDim, std::size_t cellsPerTilePair);
+            void refStats(float * rArena,
+                          std::size_t pairs, std::size_t refDim, std::size_t cellsPerTilePair,
+                          float * stats);
 
             // build the sum area tables for the target tiles
             void sat(const float * rArena,

@@ -260,17 +260,39 @@ _detect(const cell_type * cArena) const -> value_type *
 
 // subtract the tile mean from each reference pixel
 template <typename raster_t>
-void
+auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_zeroMean(value_type * rArena) const
+_refStats(value_type * rArena) const -> value_type *
 {
+    // grab a spot
+    value_type * stats = nullptr;
+    // compute the amount of memory needed to store the variances of the reference tiles: one
+    // number per reference tile
+    auto footprint = _pairs * sizeof(value_type);
+    // allocate room
+    cudaError_t status = cudaMallocManaged(&stats, footprint);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while allocating " << 1.0*footprint/1024/1024
+            << "Mb of device memory for the variances of the reference tiles: "
+            << cudaGetErrorName(status) << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::bad_alloc();
+    }
+
     // get the layout of the reference tiles; assume they are square
     auto refExt = _refLayout.shape()[0];
     // engage
-    kernels::zeroMean(rArena, _pairs, refExt, _refCells + _tgtCells);
+    kernels::refStats(rArena, _pairs, refExt, _refCells + _tgtCells, stats);
 
     // all done
-    return;
+    return stats;
 }
 
 // build the sum area tables for the target tiles

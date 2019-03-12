@@ -175,8 +175,8 @@ int main() {
 
     // start the clock
     timer.reset().start();
-    // subtract the tile mean from each pixel in the reference tile
-    c._zeroMean(rArena);
+    // subtract the tile mean from each pixel in the reference tile and compute the variance
+    auto refStats = c._refStats(rArena);
     // stop the clock
     timer.stop();
     // get the duration
@@ -184,17 +184,17 @@ int main() {
     // show me
     tlog
         << pyre::journal::at(__HERE__)
-        << "converting reference tiles to zero mean: " << 1e3 * duration << " ms"
+        << "computing the statistics of the reference tiles: " << 1e3 * duration << " ms"
         << pyre::journal::endl;
 
-    // make room for the results
-    auto * results = new value_t[cells];
+    // make room for the detected tiles
+    auto * tiles = new value_t[cells];
     // compute the result footprint
     auto rFootprint = cells * sizeof(value_t);
     // start the clock
     timer.reset().start();
     // copy the results over
-    cudaError_t status = cudaMemcpy(results, rArena, rFootprint, cudaMemcpyDeviceToHost);
+    cudaError_t status = cudaMemcpy(tiles, rArena, rFootprint, cudaMemcpyDeviceToHost);
     // stop the clock
     timer.stop();
     // if something went wrong
@@ -206,13 +206,12 @@ int main() {
         // complain
         error
             << pyre::journal::at(__HERE__)
-            << "while retrieving the results: "
+            << "while retrieving the detected tiles: "
             << description << " (" << status << ")"
             << pyre::journal::endl;
         // and bail
         throw std::runtime_error(description);
     }
-
     // get the duration
     auto rDuration = timer.read();
     // compute the transfer rate
@@ -220,29 +219,97 @@ int main() {
     // show me
     tlog
         << pyre::journal::at(__HERE__)
-        << "moving the results to the host: " << 1e3 * rDuration << " ms"
+        << "moving the detected tiles to the host: " << 1e3 * rDuration << " ms"
         << ", at " << rRate << " Gb/s"
+        << pyre::journal::endl;
+
+    // make room for the reference tile statistics
+    auto * stats = new value_t[pairs];
+    // compute the result footprint
+    auto sFootprint = pairs * sizeof(value_t);
+    // start the clock
+    timer.reset().start();
+    // copy the results over
+    status = cudaMemcpy(stats, refStats, sFootprint, cudaMemcpyDeviceToHost);
+    // stop the clock
+    timer.stop();
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // get the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while computing the statistics of the reference tiles: "
+            << description << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error(description);
+    }
+    // get the duration
+    auto sDuration = timer.read();
+    // compute the transfer rate
+    auto sRate = sFootprint / sDuration * Gb;
+    // show me
+    tlog
+        << pyre::journal::at(__HERE__)
+        << "moving reference tile statistics to the host: " << 1e3 * sDuration << " ms"
+        << ", at " << sRate << " Gb/s"
         << pyre::journal::endl;
 
     // start the clock
     timer.reset().start();
+    // establish a tolerance
+    auto tolerance = 10 * std::numeric_limits<value_t>::epsilon();
+    // make a lambda that accumulates the square of a value
+    auto square = [] (value_t partial, value_t pxl) -> value_t { return partial + pxl*pxl; };
     // verify
     for (auto pid = 0; pid < pairs; ++pid) {
         // compute the starting address of this tile
-        auto mem = results + pid * cellsPerPair;
+        auto tile = tiles + pid * cellsPerPair;
         // compute the mean of the tile
-        auto mean = std::accumulate(mem, mem+refCells, 0.0) / refCells;
+        auto mean = std::accumulate(tile, tile+refCells, 0.0) / refCells;
         // verify it's near zero
-        if (std::abs(mean) > 10 * std::numeric_limits<float>::epsilon()) {
+        if (std::abs(mean) > tolerance) {
             // make a channel
             pyre::journal::error_t error("ampcor.cuda");
             // complain
-            channel
+            error
                 << pyre::journal::at(__HERE__)
-                << "mismatch at tile " << pid << ": " << mean << " != 0"
+                << "mean mismatch at tile " << pid << ": " << mean << " != 0"
                 << pyre::journal::endl;
             // bail
-            throw std::runtime_error("verification error!");
+            throw std::runtime_error("mean verification error!");
+        }
+        // compute the variance of the tile
+        auto expectedVar = std::sqrt(std::accumulate(tile, tile+refCells, 0.0, square));
+        // the computed value
+        auto computedVar = refStats[pid];
+        // compute the mismatch
+        auto mismatchVar = std::abs(1 - computedVar/expectedVar);
+        // show me
+        channel
+            << pyre::journal::at(__HERE__)
+            << "tile " << pid << ": "
+            << "expected variance: " << expectedVar
+            << ", computed variance: " << computedVar
+            << pyre::journal::endl;
+
+        // if there is serious mismatch
+        if (mismatchVar > 10*tolerance) {
+            // make a channel
+            pyre::journal::error_t error("ampcor.cuda");
+            // complain
+            error
+                << pyre::journal::at(__HERE__)
+                << "variance mismatch at tile " << pid << ": "
+                << "computed: " << computedVar
+                << ", expected: " << expectedVar
+                << pyre::journal::endl;
+            // bail
+            throw std::runtime_error("variance verification error!");
         }
     }
     // stop the clock
@@ -271,7 +338,7 @@ int main() {
             // the amplitude of the reference tile
             for (auto idx=0; idx < refExt; ++idx) {
                 for (auto jdx=0; jdx < refExt; ++jdx) {
-                    channel << results[pid*cellsPerPair + idx*refExt + jdx] << " ";
+                    channel << tiles[pid*cellsPerPair + idx*refExt + jdx] << " ";
                 }
                 channel << pyre::journal::newline;
             }
@@ -280,9 +347,12 @@ int main() {
     }
 
     // clean up
+    cudaFree(refStats);
     cudaFree(cArena);
     cudaFree(rArena);
-    delete [] results;
+
+    delete [] stats;
+    delete [] tiles;
 
     // all done
     return 0;
