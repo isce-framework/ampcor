@@ -397,7 +397,9 @@ _tgtStats(const value_type * dSAT) const -> value_type *
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_correlate(const value_type * rArena, const value_type * averages) const -> value_type *
+_correlate(const value_type * rArena,
+           const value_type * refStats,
+           const value_type * tgtStats) const -> value_type *
 {
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
@@ -440,9 +442,9 @@ _correlate(const value_type * rArena, const value_type * averages) const -> valu
     auto corDim = _corLayout.shape()[0];
 
     // engage
-    kernels::correlate(rArena, averages,
-                       _pairs, _refCells, _tgtCells, _corCells,
-                       refDim, tgtDim, corDim,
+    kernels::correlate(rArena, refStats, tgtStats,
+                       _pairs,
+                       _refCells, _tgtCells, _corCells, refDim, tgtDim, corDim,
                        dCorrelation);
 
     // all done

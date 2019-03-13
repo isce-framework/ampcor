@@ -79,7 +79,9 @@ public:
     // tile within the target
     auto _tgtStats(const value_type * sat) const -> value_type *;
     // correlate
-    auto _correlate(const value_type * rArena, const value_type * averages) const -> value_type *;
+    auto _correlate(const value_type * rArena,
+                    const value_type * refStats,
+                    const value_type * tgtStats) const -> value_type *;
 
     // implementation details: data
 private:

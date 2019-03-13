@@ -37,7 +37,7 @@ namespace ampcor {
                           float * stats);
 
             // compute the correlation matrix
-            void correlate(const float * rArena, const float * dAverage,
+            void correlate(const float * rArena, const float * refStats, const float * tgtStats,
                            std::size_t pairs,
                            std::size_t refCells, std::size_t tgtCells, std::size_t corCells,
                            std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
