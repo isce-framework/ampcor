@@ -110,19 +110,18 @@ int main() {
 
     // start the clock
     timer.reset().start();
+    // make a reference raster
+    slc_t ref(refLayout);
+    // and fill it
+    for (auto idx : ref.layout()) {
+        // with random number pulled from the normal distribution
+        ref[idx] = normal(rng);
+    }
+    // make a view over the reference tile
+    auto rview = ref.constview();
     // build reference tiles
     for (auto i=0; i<placements; ++i) {
         for (auto j=0; j<placements; ++j) {
-            // make a reference raster
-            slc_t ref(refLayout);
-            // and fill it
-            for (auto idx : ref.layout()) {
-                // with random number pulled from the normal distribution
-                ref[idx] = normal(rng);
-            }
-            // make a view over the reference tile
-            auto rview = ref.constview();
-
             // make a target tile
             slc_t tgt(tgtLayout);
             // fill it with zeroes

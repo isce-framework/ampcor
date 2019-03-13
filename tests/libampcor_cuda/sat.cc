@@ -38,10 +38,10 @@ int main() {
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
-    pyre::journal::debug_t tlog("ampcor.cuda.tlog");
+    pyre::journal::info_t tlog("ampcor.cuda.tlog");
 
     // make a channel for logging progress
-    pyre::journal::debug_t channel("ampcor.cuda");
+    pyre::journal::info_t channel("ampcor.cuda");
     // show me
     channel
         << pyre::journal::at(__HERE__)
@@ -49,9 +49,9 @@ int main() {
         << pyre::journal::endl;
 
     // the reference tile extent
-    int refDim = 128;
+    int refDim = 2;
     // the margin around the reference tile
-    int margin = 32;
+    int margin = 1;
     // therefore, the target tile extent
     auto tgtDim = refDim + 2*margin;
     // the number of possible placements of the reference tile within the target tile
@@ -101,19 +101,18 @@ int main() {
 
     // start the clock
     timer.reset().start();
+    // make a reference raster
+    slc_t ref(refLayout);
+    // and fill it
+    for (auto idx : ref.layout()) {
+        // with random number pulled from the normal distribution
+        ref[idx] = normal(rng);
+    }
+    // make a view over the reference tile
+    auto rview = ref.constview();
     // build reference tiles
     for (auto i=0; i<placements; ++i) {
         for (auto j=0; j<placements; ++j) {
-            // make a reference raster
-            slc_t ref(refLayout);
-            // and fill it
-            for (auto idx : ref.layout()) {
-                // with random number pulled from the normal distribution
-                ref[idx] = normal(rng);
-            }
-            // make a view over the reference tile
-            auto rview = ref.constview();
-
             // make a target tile
             slc_t tgt(tgtLayout);
             // fill it with zeroes
@@ -124,7 +123,6 @@ int main() {
             slc_t::view_type view = tgt.view(slice);
             // fill it with the contents of the reference tile for this pair
             std::copy(rview.begin(), rview.end(), view.begin());
-
             // compute the pair id
             int pid = i*placements + j;
             // add this pair to the correlator
