@@ -42,6 +42,12 @@ namespace ampcor {
                            std::size_t refCells, std::size_t tgtCells, std::size_t corCells,
                            std::size_t refDim, std::size_t tgtDim, std::size_t corDim,
                            float * dCorrelation);
+
+            // compute the locations of the maximum value of the correlation map
+            void maxcor(const float * cor,
+                        std::size_t pairs, std::size_t corCells, std::size_t corDim,
+                        int * loc);
+
         }
     }
 }

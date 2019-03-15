@@ -83,6 +83,8 @@ public:
                     const value_type * refStats,
                     const value_type * tgtStats) const -> value_type *;
 
+    auto _maxcor(const value_type * gamma) const -> int *;
+
     // implementation details: data
 private:
     // my capacity, in {ref/tgt} pairs

@@ -182,7 +182,7 @@ _push() const -> cell_type *
     // compute the required size
     auto footprint = _pairs * (_refFootprint + _tgtFootprint);
     // allocate room for it
-    cudaError_t status = cudaMallocManaged(&cArena, footprint);
+    auto status = cudaMallocManaged(&cArena, footprint);
     // if something went wrong
     if (status != cudaSuccess) {
         // make a channel
@@ -235,7 +235,7 @@ _detect(const cell_type * cArena) const -> value_type *
     // compute the required size
     auto footprint = cells * sizeof(value_type);
     // allocate room for it
-    cudaError_t status = cudaMallocManaged(&rArena, footprint);
+    auto status = cudaMallocManaged(&rArena, footprint);
     // if something went wrong
     if (status != cudaSuccess) {
         // make a channel
@@ -270,7 +270,7 @@ _refStats(value_type * rArena) const -> value_type *
     // number per reference tile
     auto footprint = _pairs * sizeof(value_type);
     // allocate room
-    cudaError_t status = cudaMallocManaged(&stats, footprint);
+    auto status = cudaMallocManaged(&stats, footprint);
     // if something went wrong
     if (status != cudaSuccess) {
         // make a channel
@@ -309,7 +309,7 @@ _sat(const value_type * rArena) const -> value_type *
     // compute the amount of memory needed to store them
     auto footprint = _pairs * _tgtFootprint;
     // allocate memory
-    cudaError_t status = cudaMallocManaged(&sat, footprint);
+    auto status = cudaMallocManaged(&sat, footprint);
     // if something went wrong
     if (status != cudaSuccess) {
         // make a channel
@@ -356,7 +356,7 @@ _tgtStats(const value_type * dSAT) const -> value_type *
     // mean per placement per tile
     auto footprint = _pairs * _corFootprint;
     // allocate memory on the device
-    cudaError_t status = cudaMallocManaged(&stats, footprint);
+    auto status = cudaMallocManaged(&stats, footprint);
     // if something went wrong
     if (status != cudaSuccess) {
         // get the error description
@@ -411,7 +411,7 @@ _correlate(const value_type * rArena,
     // and the amount of memory needed to store them
     auto footprint = _pairs * _corFootprint;
     // allocate memory on the device
-    cudaError_t status = cudaMallocManaged(&dCorrelation, footprint);
+    auto status = cudaMallocManaged(&dCorrelation, footprint);
     // if something went wrong
     if (status != cudaSuccess) {
         // get the error description
@@ -449,6 +449,53 @@ _correlate(const value_type * rArena,
 
     // all done
     return dCorrelation;
+}
+
+
+// find the locations of the correlation maxima
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+_maxcor(const value_type * gamma) const -> int *
+{
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
+
+    // find a spot
+    int * loc = nullptr;
+    // compute the amount of memory we need: a (row, coal) locator for each tile pair
+    auto footprint = 2 * _pairs * sizeof(int);
+    // allocate memory on the device
+    auto status = cudaMallocManaged(&loc, footprint);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // get the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while allocating device memory for the location of the correlation maxima: "
+            << description << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::bad_alloc();
+    }
+    // show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "allocated " << footprint << " bytes for the locations of the correlation maxima at "
+        << loc
+        << pyre::journal::endl;
+
+    // get the dimension of the correlation matrix
+    auto corDim = _corLayout.shape()[0];
+    // engage
+    kernels::maxcor(gamma, _pairs, _corCells, corDim, loc);
+
+    // all done
+    return loc;
 }
 
 
