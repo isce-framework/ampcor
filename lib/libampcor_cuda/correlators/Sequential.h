@@ -61,58 +61,79 @@ public:
 
     // meta-methods
 public:
-    virtual ~Sequential();
-    Sequential(size_type pairs, const layout_type & refLayout, const layout_type & tgtLayout);
-
+    inline ~Sequential();
+    inline Sequential(size_type pairs,
+                      const layout_type & refLayout, const layout_type & tgtLayout,
+                      size_type zoomFactor=2, size_type zoomMargin=8);
 
     // implementation details: methods
 public:
     // push the tiles in the plan to device
-    auto _push() const -> cell_type *;
+    inline auto _push() const -> cell_type *;
     // compute the magnitude of the complex signal pixel-by-pixel
-    auto _detect(const cell_type * cArena) const -> value_type *;
+    inline auto _detect(const cell_type * cArena) const -> value_type *;
     // subtract the mean from reference tiles and compute the square root of their variance
-    auto _refStats(value_type * rArena) const -> value_type *;
+    inline auto _refStats(value_type * rArena) const -> value_type *;
     // compute the sum area tables for the target tiles
-    auto _sat(const value_type * rArena) const -> value_type *;
+    inline auto _sat(const value_type * rArena) const -> value_type *;
     // compute the mean of all possible placements of a tile the same size as the reference
     // tile within the target
-    auto _tgtStats(const value_type * sat) const -> value_type *;
+    inline auto _tgtStats(const value_type * sat) const -> value_type *;
     // correlate
-    auto _correlate(const value_type * rArena,
-                    const value_type * refStats,
-                    const value_type * tgtStats) const -> value_type *;
+    inline auto _correlate(const value_type * rArena,
+                           const value_type * refStats,
+                           const value_type * tgtStats) const -> value_type *;
+    // find the locations of the maxima of the correlation matrix
+    inline auto _maxcor(const value_type * gamma) const -> int *;
+    // allocate memory for a new arena big enough to hold the refined tiles
+    inline auto _refinedArena() const -> cell_type *;
+    // refine the reference tiles
+    inline void _refRefine(cell_type * coarseArena, cell_type * refinedArena) const;
+    // refine the target tiles
+    inline void _tgtRefine(cell_type * coarseArena, cell_type * refinedArena,
+                           int * locations) const;
 
-    auto _maxcor(const value_type * gamma) const -> int *;
 
     // implementation details: data
 private:
     // my capacity, in {ref/tgt} pairs
-    size_type _pairs;
+    const size_type _pairs;
 
     // the shape of the reference tiles
-    layout_type _refLayout;
+    const layout_type _refLayout;
     // the shape of the search windows in the target image
-    layout_type _tgtLayout;
+    const layout_type _tgtLayout;
     // the shape of the correlation matrix
-    layout_type _corLayout;
+    const layout_type _corLayout;
+    // the shape of the reference tiles after refinement
+    const layout_type _refRefinedLayout;
+    // the shape of the target tiles after refinement
+    const layout_type _tgtRefinedLayout;
 
     // the number of cells in a reference tile
-    size_type _refCells;
+    const size_type _refCells;
     // the number of cells in a target search window
-    size_type _tgtCells;
+    const size_type _tgtCells;
     // the number of cell in a correlation matrix
-    size_type _corCells;
+    const size_type _corCells;
+    // the number of cells in a refined reference tile
+    const size_type _refRefinedCells;
+    // the number of cells in a refined target tile
+    const size_type _tgtRefinedCells;
 
     // the number of bytes in a reference tile
-    size_type _refFootprint;
+    const size_type _refFootprint;
     // the number of bytes in a target search window
-    size_type _tgtFootprint;
+    const size_type _tgtFootprint;
     // the number of bytes in a correlation matrix
-    size_type _corFootprint;
+    const size_type _corFootprint;
+    // the number of bytes in a refined reference tile
+    const size_type _refRefinedFootprint;
+    // the number of bytes in a refined target tile
+    const size_type _tgtRefinedFootprint;
 
     // host storage for the tile pairs
-    cell_type * _arena;
+    cell_type * const _arena;
 };
 
 
