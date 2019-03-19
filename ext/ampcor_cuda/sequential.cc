@@ -7,11 +7,12 @@
 
 // configuration
 #include <portinfo>
-
 // externals
 #include <Python.h>
-#include <pyre/journal.h>
+// cuda
+#include <cufft.h>
 // support
+#include <pyre/journal.h>
 #include <ampcor_cuda/correlators.h>
 // access to the {ampcor} extension capsules
 #include <ampcor/capsules.h>
