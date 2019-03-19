@@ -48,6 +48,10 @@ namespace ampcor {
                         std::size_t pairs, std::size_t corCells, std::size_t corDim,
                         int * loc);
 
+            // nudge the (row, col) pairs so that they describe sub-tiles within a target tile
+            void nudge(std::size_t pairs,
+                       std::size_t refDim,  std::size_t tgtDim, std::size_t margin,
+                       int * locations);
         }
     }
 }
