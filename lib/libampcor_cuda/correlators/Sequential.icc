@@ -88,12 +88,14 @@ ampcor::cuda::correlators::Sequential<raster_t>::
 Sequential(size_type pairs,
            const layout_type & refLayout, const layout_type & tgtLayout,
            size_type refineFactor, size_type refineMargin) :
-    _pairs{pairs},
+    _pairs{ pairs },
+    _refineFactor{ refineFactor },
+    _refineMargin{ refineMargin },
     _refLayout{ refLayout },
     _tgtLayout{ tgtLayout },
     _corLayout{ tgtLayout.shape() - refLayout.shape() + index_type::fill(1) },
     _refRefinedLayout{ refineFactor * _refLayout.shape() },
-    _tgtRefinedLayout{ _refRefinedLayout.shape() + index_type::fill(2*refineMargin) },
+    _tgtRefinedLayout{ refineFactor * (_refLayout.shape() + index_type::fill(2*refineMargin)) },
     _refCells{ _refLayout.size() },
     _tgtCells{ _tgtLayout.size() },
     _corCells{ _corLayout.size() },
@@ -106,8 +108,9 @@ Sequential(size_type pairs,
     _tgtRefinedFootprint{ _tgtRefinedCells * sizeof(cell_type) },
     _arena{ new cell_type[ _pairs * (_refCells+_tgtCells) ] }
 {
-    // compute the footprint
+    // compute the footprints
     auto footprint = _pairs*(_refFootprint + _tgtFootprint);
+    auto refinedFootprint = _pairs*(_refRefinedFootprint + _tgtRefinedFootprint);
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
     // show me
@@ -123,6 +126,17 @@ Sequential(size_type pairs,
         << pyre::journal::newline
         << "    footprint: " << (_refCells+_tgtCells) << " cells in "
         << (footprint/1024/1024) << " Mb"
+        << pyre::journal::newline
+        << "    refine factor: " << refineFactor
+        << pyre::journal::newline
+        << "    refine margin: " << refineMargin
+        << pyre::journal::newline
+        << "    refined ref shape: " << _refRefinedLayout << ", " << _refRefinedCells << " cells"
+        << pyre::journal::newline
+        << "    refined tgt shape: " << _tgtRefinedLayout << ", " << _tgtRefinedCells << " cells"
+        << pyre::journal::newline
+        << "    footprint: " << (_refRefinedCells+_tgtRefinedCells) << " cells in "
+        << (refinedFootprint/1024/1024) << " Mb"
         << pyre::journal::newline
         << "    arena: " << _arena
         << pyre::journal::endl;
@@ -510,6 +524,28 @@ _maxcor(const value_type * gamma) const -> int *
 }
 
 
+// adjust the locations of the correlation maxima so that the new target tiles fit within the
+// search window
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+_nudge(int * locations) const
+{
+    // make sure that all locations are adjusted so that they allow enough room for the
+    // {refineMargin}
+
+    // get the dimension of the reference tiles
+    auto refDim = _refLayout.shape()[0];
+    // get the dimension of the target tiles
+    auto tgtDim = _tgtLayout.shape()[0];
+    // move the ULHC of the tiles so they fit
+    kernels::nudge(_pairs, refDim, tgtDim, _refineMargin, locations);
+
+    // all done
+    return;
+}
+
+
 // allocate room for the refined tiles
 template <typename raster_t>
 auto
@@ -517,7 +553,7 @@ ampcor::cuda::correlators::Sequential<raster_t>::
 _refinedArena() const -> cell_type *
 {
     // make a channel
-    pyre::journal::info_t channel("ampcor.cuda");
+    pyre::journal::debug_t channel("ampcor.cuda");
 
     // grab a spot
     cell_type * arena = nullptr;
@@ -544,10 +580,6 @@ _refinedArena() const -> cell_type *
     channel
         << pyre::journal::at(__HERE__)
         << "allocated a refined arena: " << footprint << " bytes at " << arena
-        << pyre::journal::newline
-        << "    " << _pairs << " reference tiles: " << _refRefinedLayout
-        << pyre::journal::newline
-        << "    " << _pairs << " target tiles: " << _tgtRefinedLayout
         << pyre::journal::endl;
 
     // initialize the memory
@@ -580,25 +612,10 @@ void
 ampcor::cuda::correlators::Sequential<raster_t>::
 _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
 {
-    // in order to explain what is happening here, let's be concrete: assume that the reference
-    // tiles were 128x128, and we want to refine them with a {refineFactor} of 2 to 256x256 via
-    // FFT; further, let the target tiles have a margin of 32, so they are 192x192, and let the
-    // {refineMargin} be 8, so that refined target tiles are 264x264
-
-    // the data is already expected to be on the device in {coarseArena} as part of previous
-    // processing; it is packed with pairs of reference and target tiles interleaved
-
-    // we have already allocated {refinedArena} with enough space to hold enough pairs of
-    // 256x256 refined reference tiles and 264x264 refined target tiles
-
-    // to refine the reference tiles, we forward FFT them into zeroed out slots in the refined
-    // arena with enough room for the refined tile; this gives a transformed tile that is zero
-    // padded to the zoom shape; we then FFT back the entire refined tiles
-
     // make a channel
-    pyre::journal::info_t channel("ampcor.cuda");
+    pyre::journal::debug_t channel("ampcor.cuda");
 
-    // step 1: forward FFT from coarseArena to refinedArena
+    // step 1: forward FFT from {coarseArena} to {refinedArena}
     // the plan characteristics
     int dim = 2;
     int fwdRanks[] = { _refLayout.shape()[0], _refLayout.shape()[1] };
@@ -617,14 +634,6 @@ _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
     int fwdOStride = 1;
     // the distance between reference tiles in the refined arena
     int fwdODist = _refRefinedCells + _tgtRefinedCells;
-
-    // show me
-    channel
-        << pyre::journal::at(__HERE__)
-        << "  coarse arena: expected " << _pairs * fwdIDist << " bytes"
-        << pyre::journal::newline
-        << "  refined arena: expected " << _pairs * fwdODist << " bytes"
-        << pyre::journal::endl;
 
     // grab a spot for a plan
     cufftHandle fwdPlan;
@@ -769,12 +778,76 @@ _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
 }
 
 
+// migrate the expanded unrefined target tiles into the {refinedArena}
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+_tgtMigrate(cell_type * coarseArena, int * locations, cell_type * refinedArena) const
+{
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
+
+    // the reference tile shape
+    auto refShape = _refLayout.shape();
+    // the target tile shape
+    auto tgtShape = _tgtLayout.shape();
+    // the refined reference tile shape
+    auto refRefinedShape = _refRefinedLayout.shape();
+    // the refined target tile shape
+    auto tgtRefinedShape = _tgtRefinedLayout.shape();
+
+    // unpack the dimensions
+    auto refDim = refShape[0];
+    auto tgtDim = tgtShape[0];
+    auto refRefinedDim = refRefinedShape[0];
+    auto tgtRefinedDim = tgtRefinedShape[0];
+
+    // compute the dimension of the expanded maxcor tile
+    auto expDim = refDim + 2 * _refineMargin;
+
+    // engage...
+    kernels::migrate(coarseArena, _pairs,
+                     refDim, tgtDim, expDim,
+                     refRefinedDim, tgtRefinedDim,
+                     locations,
+                     refinedArena);
+
+    // all done
+    return;
+}
+
+
 // refine the target tiles around the locations of the correlation maxima
 template <typename raster_t>
 void
 ampcor::cuda::correlators::Sequential<raster_t>::
-_tgtRefine(cell_type * coarseArena, cell_type * refinedArena, int * locations) const
+_tgtRefine(cell_type * refinedArena) const
 {
+    // N.B.: assumes {locations} are already nudged and on the CPU...
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
+
+#if 0
+    // the shape of the target tile
+    auto tgtShape = _tgtLayout.shape();
+    // the shape of the expanded target tile
+    auto expShape = _refLayout.shape() + index_type::fill(2*_refineMargin);
+
+    // step 1: forward FFT from {coarseArena} to {refinedArena}
+    // the plan characteristics
+    int dim = 2;
+    // use the shape of the expanded target tile
+    int fwdRanks[] = { expShape[0], expShape[1] };
+    // this tile is embedded in our original target tile
+    int fwdIEmbed[] = { tgtShape[0], tgtShape[1] };
+    // the data is dense
+    int fwdIStride = 1;
+    // the distance between tiles
+#endif
+
+    // MGA: NYI
+    throw std::runtime_error("NYI!");
+
     // all done
     return;
 }

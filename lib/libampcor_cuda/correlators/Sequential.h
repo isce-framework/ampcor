@@ -64,7 +64,7 @@ public:
     inline ~Sequential();
     inline Sequential(size_type pairs,
                       const layout_type & refLayout, const layout_type & tgtLayout,
-                      size_type zoomFactor=2, size_type zoomMargin=8);
+                      size_type refineFactor=2, size_type refineMargin=8);
 
     // implementation details: methods
 public:
@@ -85,19 +85,25 @@ public:
                            const value_type * tgtStats) const -> value_type *;
     // find the locations of the maxima of the correlation matrix
     inline auto _maxcor(const value_type * gamma) const -> int *;
+    // adjust the locations of the maxima so that the refined tile sources fit with the target
+    inline void _nudge(int * locations) const;
     // allocate memory for a new arena big enough to hold the refined tiles
     inline auto _refinedArena() const -> cell_type *;
     // refine the reference tiles
     inline void _refRefine(cell_type * coarseArena, cell_type * refinedArena) const;
+    // migrate the expanded unrefined target tiles into the {refinedArena}
+    inline void _tgtMigrate(cell_type * coarseArena, int * locations,
+                            cell_type * refinedArena) const;
     // refine the target tiles
-    inline void _tgtRefine(cell_type * coarseArena, cell_type * refinedArena,
-                           int * locations) const;
+    inline void _tgtRefine(cell_type * refinedArena) const;
 
 
     // implementation details: data
 private:
     // my capacity, in {ref/tgt} pairs
     const size_type _pairs;
+    const size_type _refineFactor;
+    const size_type _refineMargin;
 
     // the shape of the reference tiles
     const layout_type _refLayout;

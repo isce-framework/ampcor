@@ -52,6 +52,14 @@ namespace ampcor {
             void nudge(std::size_t pairs,
                        std::size_t refDim,  std::size_t tgtDim, std::size_t margin,
                        int * locations);
+
+            // migrate the expanded maxcor tiles to the refinement arena
+            void migrate(const std::complex<float>  * arena,
+                         std::size_t pairs,
+                         std::size_t refDim, std::size_t tgtDim, std::size_t expDim,
+                         std::size_t refRefinedDim, std::size_t tgtRefinedDim,
+                         const int * locations,
+                         std::complex<float> * refinedArena);
         }
     }
 }
