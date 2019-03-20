@@ -17,7 +17,7 @@
 #include <cuda_runtime.h>
 #include <cooperative_groups.h>
 // pull the declarations
-#include "public.h"
+#include "kernels.h"
 
 
 // the correlation kernel
