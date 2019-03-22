@@ -40,8 +40,6 @@ using tile_t = pyre::grid::grid_t<slc_t::cell_type, slc_t::layout_type, mem_t>;
 
 // driver
 int main() {
-    // pick a device
-    cudaSetDevice(5);
     // number of gigabytes per byte
     const auto Gb = 1.0/(1024*1024*1024);
 
