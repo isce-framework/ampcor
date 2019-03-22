@@ -626,7 +626,6 @@ _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
     int fwdIStride = 1;
     // the distance between reference tiles
     int fwdIDist = _refCells + _tgtCells;
-
     // the data layout of the refined tiles
     // the tile shape stays the same
     int fwdOEmbed[] = { _refRefinedLayout.shape()[0], _refRefinedLayout.shape()[1] };
@@ -691,19 +690,19 @@ _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
         // bail
         throw std::runtime_error(description);
     }
+    // clean up
+    cufftDestroy(fwdPlan);
 
     // step 2: reverse FFT of the refined tiles back into the refined arena
     auto refRefinedShape = _refRefinedLayout.shape();
     // the plan characteristics
     int revRanks[] = { refRefinedShape[0], refRefinedShape[1] };
-
     // the data layout of the transformed reference tiles
     int revIEmbed[] = { refRefinedShape[0], refRefinedShape[1] };
     // the data is densely packed
     int revIStride = 1;
     // the distance between reference tiles
     int revIDist = _refRefinedCells + _tgtRefinedCells;
-
     // the reverse FFT tiles have identical layout
     int revOEmbed[] = { refRefinedShape[0], refRefinedShape[1] };
     // the data is densely packed
@@ -732,7 +731,6 @@ _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
         // and bail
         throw std::runtime_error("while refining the reference tiles: reverse FFT plan error");
     }
-
 
     // execute the reverse plan
     status = cufftExecC2C(revPlan,
@@ -770,7 +768,6 @@ _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
     }
 
     // clean up
-    cufftDestroy(fwdPlan);
     cufftDestroy(revPlan);
 
     // all done
@@ -827,26 +824,165 @@ _tgtRefine(cell_type * refinedArena) const
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
 
-#if 0
     // the shape of the target tile
     auto tgtShape = _tgtLayout.shape();
+    // the shape the refined target tile
+    auto tgtRefinedShape = _tgtRefinedLayout.shape();
     // the shape of the expanded target tile
     auto expShape = _refLayout.shape() + index_type::fill(2*_refineMargin);
 
-    // step 1: forward FFT from {coarseArena} to {refinedArena}
+    // N.B.: the expanded maxcor target tiles are expected to have already been moved to the
+    // refined arena after the maxcor locations were determined
+
+    // step 1: forward FFT in place in {refinedArena}
     // the plan characteristics
     int dim = 2;
     // use the shape of the expanded target tile
     int fwdRanks[] = { expShape[0], expShape[1] };
-    // this tile is embedded in our original target tile
-    int fwdIEmbed[] = { tgtShape[0], tgtShape[1] };
+    // this tile is already occupying its destination location in {refinedArena}
+    int fwdIEmbed[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
     // the data is dense
     int fwdIStride = 1;
     // the distance between tiles
-#endif
+    int fwdIDist = _refRefinedCells + _tgtRefinedCells;
+    // the destination of the forward FFT has indentical layout
+    int fwdOEmbed[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+    // the data is dense
+    int fwdOStride = 1;
+    // the distance between tiles
+    int fwdODist = _refRefinedCells + _tgtRefinedCells;
 
-    // MGA: NYI
-    throw std::runtime_error("NYI!");
+    // grab a spot for a plan
+    cufftHandle fwdPlan;
+    // instantiate
+    auto status = cufftPlanMany(&fwdPlan, dim, fwdRanks,
+                                fwdIEmbed, fwdIStride, fwdIDist,
+                                fwdOEmbed, fwdOStride, fwdODist,
+                                CUFFT_C2C,
+                                _pairs
+                                );
+    // if something went wrong
+    if (status != CUFFT_SUCCESS) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while refining the target tiles: forward FFT plan: error " << status
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error("while refining the target tiles: forward FFT plan error");
+    }
+
+    // the address of the first expanded maxcor tile
+    auto firstTile = reinterpret_cast<cufftComplex *>(refinedArena + _refRefinedCells);
+    // execute the forward plan
+    status = cufftExecC2C(fwdPlan, firstTile, firstTile, CUFFT_FORWARD);
+    // if something went wrong
+    if (status != CUFFT_SUCCESS) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while refining the target tiles: executing the forward FFT plan: error "
+            << status
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error("while executing the forward FFT plan for the reference tiles");
+    }
+    // wait for the device to finish
+    auto code = cudaDeviceSynchronize();
+    // if something went wrong
+    if (code != cudaSuccess) {
+        // form the error description
+        std::string description = cudaGetErrorName(code);
+        // make a channel
+        pyre::journal::error_t channel("ampcor.cuda");
+        // complain
+        channel
+            << pyre::journal::at(__HERE__)
+            << "while refining target tiles: STEP 1: " << description << " (" << code << ")"
+            << pyre::journal::endl;
+        // bail
+        throw std::runtime_error(description);
+    }
+    // clean up the forward plan
+    cufftDestroy(fwdPlan);
+
+    // step 2: reverse FFT of the refined tiles back into the refined arena
+    // the plan characteristics
+    int revRanks[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+
+    // the data layout of the transformed reference tiles
+    int revIEmbed[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+    // the data is densely packed
+    int revIStride = 1;
+    // the distance between reference tiles
+    int revIDist = _refRefinedCells + _tgtRefinedCells;
+    // the reverse FFT tiles have identical layout
+    int revOEmbed[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+    // the data is densely packed
+    int revOStride = 1;
+    // the distance between reference tiles
+    int revODist = _refRefinedCells + _tgtRefinedCells;
+
+    // grab a spot
+    cufftHandle revPlan;
+    // instantiate the reverse plan
+    status = cufftPlanMany(&revPlan, dim, revRanks,
+                           revIEmbed, revIStride, revIDist,
+                           revOEmbed, revOStride, revODist,
+                           CUFFT_C2C,
+                           _pairs
+                           );
+    // if something went wrong
+    if (status != CUFFT_SUCCESS) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while refining the target tiles: reverse FFT plan: error " << status
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error("while refining the target tiles: reverse FFT plan error");
+    }
+
+    // execute the reverse plan
+    status = cufftExecC2C(revPlan, firstTile, firstTile, CUFFT_FORWARD);
+    // if something went wrong
+    if (status != CUFFT_SUCCESS) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while refining the target tiles: executing the reverse FFT plan: error "
+            << status
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error("while executing the reverse FFT plan for the target tiles");
+    }
+    // wait for the device to finish
+    code = cudaDeviceSynchronize();
+    // if something went wrong
+    if (code != cudaSuccess) {
+        // form the error description
+        std::string description = cudaGetErrorName(code);
+        // make a channel
+        pyre::journal::error_t channel("ampcor.cuda");
+        // complain
+        channel
+            << pyre::journal::at(__HERE__)
+            << "while refining target tiles: STEP 2: " << description << " (" << code << ")"
+            << pyre::journal::endl;
+        // bail
+        throw std::runtime_error(description);
+    }
+
+    // clean up
+    cufftDestroy(revPlan);
 
     // all done
     return;
