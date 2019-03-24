@@ -49,6 +49,42 @@ void
 ampcor::cuda::correlators::Sequential<raster_t>::
 adjust()
 {
+    // move the tiles to the device
+    auto coarseArena = _push();
+    // compute their amplitudes
+    auto amplitudes = _detect(coarseArena);
+    // adjust the reference tiles to zero mean and compute the variances
+    auto refStatistics = _refStats(amplitudes);
+    // compute the sum area tables for all possible search window placements in the target tile
+    auto sat = _sat(amplitudes);
+    // use the SATs to compute the mean amplitude of all possible window placements
+    auto tgtStatistics = _tgtStats(sat);
+    // compute the correlation hyper-surface
+    auto gamma = _correlate(amplitudes, refStatistics, tgtStatistics);
+    // find its maxima
+    auto maxcor = _maxcor(gamma);
+    // ensure that the expanded target tiles where the correlation is maximum fit within the
+    // search window
+    _nudge(maxcor);
+
+    // allocate room for the refinement area
+    auto refinedArena = _refinedArena();
+    // refine the reference tiles
+    _refRefine(coarseArena, refinedArena);
+    // collect the expanded maxcor tiles
+    _tgtMigrate(coarseArena, maxcor, refinedArena);
+    // refine the target tiles
+    _tgtRefine(refinedArena);
+
+    // clean up
+    cudaFree(maxcor);
+    cudaFree(gamma);
+    cudaFree(tgtStatistics);
+    cudaFree(sat);
+    cudaFree(refStatistics);
+    cudaFree(amplitudes);
+    cudaFree(coarseArena);
+
     // all done
     return;
 }
