@@ -252,49 +252,6 @@ adjust(PyObject *, PyObject *args)
     return Py_None;
 }
 
-// perform sub-pixel level adjustments to the registration map
-const char * const
-ampcor::extension::cuda::sequential::
-refine__name__ = "refine";
-
-const char * const
-ampcor::extension::cuda::sequential::
-refine__doc__ = "perform sub-pixel adjustments to the registration map";
-
-PyObject *
-ampcor::extension::cuda::sequential::
-refine(PyObject *, PyObject *args)
-{
-    PyObject * pyWorker;
-    // attempt to parse the arguments
-    int ok = PyArg_ParseTuple(args,
-                              "O!:refine",
-                              &PyCapsule_Type, &pyWorker);
-    // if something went wrong
-    if (!ok) {
-        // complain
-        return nullptr;
-    }
-
-    // check the worker capsule
-    if (!PyCapsule_IsValid(pyWorker, capsule_t)) {
-        // give a reason
-        PyErr_SetString(PyExc_TypeError, "invalid Sequential worker capsule");
-        // and bail
-        return nullptr;
-    }
-    // and unpack it; can't be const
-    sequential_t & worker =
-        *reinterpret_cast<sequential_t *>(PyCapsule_GetPointer(pyWorker, capsule_t));
-
-    // ask the worker to refine the registration map
-    worker.refine();
-
-    // all done
-    Py_INCREF(Py_None);
-    return Py_None;
-}
-
 // destructors
 void
 ampcor::extension::cuda::sequential::

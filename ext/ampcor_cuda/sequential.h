@@ -30,15 +30,10 @@ namespace ampcor {
                 extern const char * const addTarget__doc__;
                 PyObject * addTarget(PyObject *self, PyObject *args);
 
-                // perform pixel level adjustments to the registration map
+                // compute adjustments to the registration map
                 extern const char * const adjust__name__;
                 extern const char * const adjust__doc__;
                 PyObject * adjust(PyObject *self, PyObject *args);
-
-                // perform sub-pixel level adjustments to the registration map
-                extern const char * const refine__name__;
-                extern const char * const refine__doc__;
-                PyObject * refine(PyObject *self, PyObject *args);
 
             } // of namespace sequential`
         } // of namespace cuda

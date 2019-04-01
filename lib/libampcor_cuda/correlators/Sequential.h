@@ -48,10 +48,8 @@ public:
     // add a target search window to the pile
     void addTargetTile(size_type pid, const constview_type & tgt);
 
-    // coarse adjustment to the offset map
+    // compute adjustments to the offset map
     void adjust();
-    // fine adjustments to the offset map
-    void refine();
 
     // accessors
     auto arena() const -> const cell_type *;

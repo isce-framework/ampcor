@@ -39,9 +39,6 @@ namespace ampcor {
                  { sequential::adjust__name__,
                    sequential::adjust, METH_VARARGS, sequential::adjust__doc__},
 
-                 { sequential::refine__name__,
-                   sequential::refine, METH_VARARGS, sequential::refine__doc__},
-
                  // sentinel
                  { 0, 0, 0, 0 }
             };

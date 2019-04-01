@@ -90,16 +90,6 @@ adjust()
 }
 
 
-template <typename raster_t>
-void
-ampcor::cuda::correlators::Sequential<raster_t>::
-refine()
-{
-    // all done
-    return;
-}
-
-
 // accessors
 template <typename raster_t>
 auto
