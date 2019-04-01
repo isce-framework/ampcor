@@ -641,20 +641,25 @@ _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
 
+    // get the shape the reference tile
+    auto rshape = _refLayout.shape();
+    // and the shape of the refined tile
+    auto tshape = _refRefinedLayout.shape();
+
     // step 1: forward FFT from {coarseArena} to {refinedArena}
     // the plan characteristics
     int dim = 2;
-    int fwdRanks[] = { _refLayout.shape()[0], _refLayout.shape()[1] };
+    int fwdRanks[] = { static_cast<int>(rshape[0]), static_cast<int>(rshape[1]) };
     //  the data layout of the coarse tiles
     // the tile shape stays the same
-    int fwdIEmbed[] = { _refLayout.shape()[0], _refLayout.shape()[1] };
+    int fwdIEmbed[] = { static_cast<int>(rshape[0]), static_cast<int>(rshape[1]) };
     // the data is densely packed
     int fwdIStride = 1;
     // the distance between reference tiles
     int fwdIDist = _refCells + _tgtCells;
     // the data layout of the refined tiles
     // the tile shape stays the same
-    int fwdOEmbed[] = { _refRefinedLayout.shape()[0], _refRefinedLayout.shape()[1] };
+    int fwdOEmbed[] = { static_cast<int>(tshape[0]), static_cast<int>(tshape[1]) };
     // the data is densely packed
     int fwdOStride = 1;
     // the distance between reference tiles in the refined arena
@@ -720,17 +725,16 @@ _refRefine(cell_type * coarseArena, cell_type * refinedArena) const
     cufftDestroy(fwdPlan);
 
     // step 2: reverse FFT of the refined tiles back into the refined arena
-    auto refRefinedShape = _refRefinedLayout.shape();
     // the plan characteristics
-    int revRanks[] = { refRefinedShape[0], refRefinedShape[1] };
+    int revRanks[] = { static_cast<int>(tshape[0]), static_cast<int>(tshape[1]) };
     // the data layout of the transformed reference tiles
-    int revIEmbed[] = { refRefinedShape[0], refRefinedShape[1] };
+    int revIEmbed[] = { static_cast<int>(tshape[0]), static_cast<int>(tshape[1]) };
     // the data is densely packed
     int revIStride = 1;
     // the distance between reference tiles
     int revIDist = _refRefinedCells + _tgtRefinedCells;
     // the reverse FFT tiles have identical layout
-    int revOEmbed[] = { refRefinedShape[0], refRefinedShape[1] };
+    int revOEmbed[] = { static_cast<int>(tshape[0]), static_cast<int>(tshape[1]) };
     // the data is densely packed
     int revOStride = 1;
     // the distance between reference tiles
@@ -853,7 +857,7 @@ _tgtRefine(cell_type * refinedArena) const
     // the shape of the target tile
     auto tgtShape = _tgtLayout.shape();
     // the shape the refined target tile
-    auto tgtRefinedShape = _tgtRefinedLayout.shape();
+    auto tgtRefShape = _tgtRefinedLayout.shape();
     // the shape of the expanded target tile
     auto expShape = _refLayout.shape() + index_type::fill(2*_refineMargin);
 
@@ -864,15 +868,15 @@ _tgtRefine(cell_type * refinedArena) const
     // the plan characteristics
     int dim = 2;
     // use the shape of the expanded target tile
-    int fwdRanks[] = { expShape[0], expShape[1] };
+    int fwdRanks[] = { static_cast<int>(expShape[0]), static_cast<int>(expShape[1]) };
     // this tile is already occupying its destination location in {refinedArena}
-    int fwdIEmbed[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+    int fwdIEmbed[] = { static_cast<int>(tgtRefShape[0]), static_cast<int>(tgtRefShape[1]) };
     // the data is dense
     int fwdIStride = 1;
     // the distance between tiles
     int fwdIDist = _refRefinedCells + _tgtRefinedCells;
     // the destination of the forward FFT has indentical layout
-    int fwdOEmbed[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+    int fwdOEmbed[] = { static_cast<int>(tgtRefShape[0]), static_cast<int>(tgtRefShape[1]) };
     // the data is dense
     int fwdOStride = 1;
     // the distance between tiles
@@ -938,16 +942,16 @@ _tgtRefine(cell_type * refinedArena) const
 
     // step 2: reverse FFT of the refined tiles back into the refined arena
     // the plan characteristics
-    int revRanks[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+    int revRanks[] = { static_cast<int>(tgtRefShape[0]), static_cast<int>(tgtRefShape[1]) };
 
     // the data layout of the transformed reference tiles
-    int revIEmbed[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+    int revIEmbed[] = { static_cast<int>(tgtRefShape[0]), static_cast<int>(tgtRefShape[1]) };
     // the data is densely packed
     int revIStride = 1;
     // the distance between reference tiles
     int revIDist = _refRefinedCells + _tgtRefinedCells;
     // the reverse FFT tiles have identical layout
-    int revOEmbed[] = { tgtRefinedShape[0], tgtRefinedShape[1] };
+    int revOEmbed[] = { static_cast<int>(tgtRefShape[0]), static_cast<int>(tgtRefShape[1]) };
     // the data is densely packed
     int revOStride = 1;
     // the distance between reference tiles
