@@ -175,7 +175,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the sum area tables
-    auto sat = c._sat(rArena);
+    auto sat = c._sat(rArena, refDim, tgtDim);
     // stop the clock
     timer.stop();
     // get the duration

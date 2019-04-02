@@ -61,7 +61,7 @@ adjust()
     // adjust the reference tiles to zero mean and compute the variances
     auto refStatistics = _refStats(amplitudes, refDim, tgtDim);
     // compute the sum area tables for all possible search window placements in the target tile
-    auto sat = _sat(amplitudes);
+    auto sat = _sat(amplitudes, refDim, tgtDim);
     // use the SATs to compute the mean amplitude of all possible window placements
     auto tgtStatistics = _tgtStats(sat);
     // compute the correlation hyper-surface
@@ -368,15 +368,22 @@ _refStats(value_type * rArena, size_type refDim, size_type tgtDim) const -> valu
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_sat(const value_type * rArena) const -> value_type *
+_sat(const value_type * rArena, size_type refDim, size_type tgtDim) const -> value_type *
 {
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
 
+    // compute the size of a reference tile
+    auto refCells = refDim * refDim;
+    // compute the size of a target tile
+    auto tgtCells = tgtDim * tgtDim;
+    // compute the memory footprint of a target tile
+    auto tgtFootprint = tgtCells * sizeof(value_type);
+
     // grab a spot for the sat tables
     value_type * sat = nullptr;
     // compute the amount of memory needed to store them
-    auto footprint = _pairs * _tgtFootprint;
+    auto footprint = _pairs * tgtFootprint;
     // allocate memory
     auto status = cudaMallocManaged(&sat, footprint);
     // if something went wrong
@@ -399,10 +406,8 @@ _sat(const value_type * rArena) const -> value_type *
         << sat
         << pyre::journal::endl;
 
-    // compute the layout of the target tiles; assume they are square
-    auto tgtDim = _tgtLayout.shape()[0];
     // engage
-    kernels::sat(rArena, _pairs, _refCells, _tgtCells, tgtDim, sat);
+    kernels::sat(rArena, _pairs, refCells, tgtCells, tgtDim, sat);
 
     // all done
     return sat;

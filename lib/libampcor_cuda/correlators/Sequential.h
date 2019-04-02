@@ -73,9 +73,10 @@ public:
                         size_type refDim, size_type tgtDim) const -> value_type *;
     // subtract the mean from reference tiles and compute the square root of their variance
     inline auto _refStats(value_type * rArena,
-                        size_type refDim, size_type tgtDim) const -> value_type *;
+                          size_type refDim, size_type tgtDim) const -> value_type *;
     // compute the sum area tables for the target tiles
-    inline auto _sat(const value_type * rArena) const -> value_type *;
+    inline auto _sat(const value_type * rArena,
+                     size_type refDim, size_type tgtDim) const -> value_type *;
     // compute the mean of all possible placements of a tile the same size as the reference
     // tile within the target
     inline auto _tgtStats(const value_type * sat) const -> value_type *;
