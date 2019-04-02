@@ -37,6 +37,8 @@ class CUDA:
         # make a worker
         worker = libampcor.sequential(points, chip, window)
 
+        # show me
+        channel.log("loading tiles")
         # go through the valid pairs of reference and target tiles
         for idx, (r, t) in enumerate(plan.pairs):
             # load the reference slice
@@ -44,6 +46,7 @@ class CUDA:
             # load the target slice
             libampcor.addTarget(worker, tgt, idx, t.begin, t.end)
 
+        channel.log("adjusting the offset map")
         # ask the worker to perform pixel level adjustments
         libampcor.adjust(worker)
 
