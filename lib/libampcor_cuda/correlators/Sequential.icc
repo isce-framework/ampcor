@@ -53,6 +53,8 @@ adjust()
     auto refDim = _refLayout.shape()[0];
     // compute the dimension of the target tiles; assume they are square
     auto tgtDim = _tgtLayout.shape()[0];
+    // compute the dimension of the correlation matrix
+    auto corDim = _corLayout.shape()[0];
 
     // move the tiles to the device
     auto coarseArena = _push();
@@ -63,7 +65,7 @@ adjust()
     // compute the sum area tables for all possible search window placements in the target tile
     auto sat = _sat(amplitudes, refDim, tgtDim);
     // use the SATs to compute the mean amplitude of all possible window placements
-    auto tgtStatistics = _tgtStats(sat);
+    auto tgtStatistics = _tgtStats(sat, refDim, tgtDim, corDim);
     // compute the correlation hyper-surface
     auto gamma = _correlate(amplitudes, refStatistics, tgtStatistics);
     // find its maxima
@@ -419,7 +421,8 @@ _sat(const value_type * rArena, size_type refDim, size_type tgtDim) const -> val
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_tgtStats(const value_type * dSAT) const -> value_type *
+_tgtStats(const value_type * dSAT,
+          size_type refDim, size_type tgtDim, size_type corDim) const -> value_type *
 {
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
@@ -428,7 +431,7 @@ _tgtStats(const value_type * dSAT) const -> value_type *
     value_type * stats = nullptr;
     // compute the amount of memory needed to store the target tile statistics: we store the
     // mean per placement per tile
-    auto footprint = _pairs * _corFootprint;
+    auto footprint = _pairs * corDim*corDim * sizeof(value_type);
     // allocate memory on the device
     auto status = cudaMallocManaged(&stats, footprint);
     // if something went wrong
@@ -453,12 +456,6 @@ _tgtStats(const value_type * dSAT) const -> value_type *
         << stats
         << pyre::journal::endl;
 
-    // get the dimension of the reference tiles
-    auto refDim = _refLayout.shape()[0];
-    // get the dimension of the target tiles
-    auto tgtDim = _tgtLayout.shape()[0];
-    // get the dimensions of the correlation matrix
-    auto corDim = _corLayout.shape()[0];
     // engage
     kernels::tgtStats(dSAT, _pairs, refDim, tgtDim, corDim, stats);
 

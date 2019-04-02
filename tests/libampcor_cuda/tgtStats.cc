@@ -185,7 +185,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the sum area tables
-    auto sat = c._sat(rArena);
+    auto sat = c._sat(rArena, refDim, tgtDim);
     // stop the clock
     timer.stop();
     // get the duration
@@ -198,7 +198,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the average amplitude of all possible ref shaped sub-tiles in the target tile
-    auto tgtStats = c._tgtStats(sat);
+    auto tgtStats = c._tgtStats(sat, refDim, tgtDim, corDim);
     // stop the clock
     timer.stop();
     // get the duration

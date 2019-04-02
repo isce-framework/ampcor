@@ -210,7 +210,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the average amplitude of all possible ref shaped sub-tiles in the target tile
-    auto tgtStats = c._tgtStats(sat);
+    auto tgtStats = c._tgtStats(sat, refDim, tgtDim, corDim);
     // stop the clock
     timer.stop();
     // show me
