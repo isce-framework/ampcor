@@ -80,11 +80,12 @@ public:
     // compute the mean of all possible placements of a tile the same size as the reference
     // tile within the target
     inline auto _tgtStats(const value_type * sat,
-                          size_type refDim, size_type tgtDim,
-                          size_type corDim) const -> value_type *;
+                          size_type refDim, size_type tgtDim, size_type corDim
+                          ) const -> value_type *;
     // correlate
     inline auto _correlate(const value_type * rArena,
-                           const value_type * refStats, const value_type * tgtStats
+                           const value_type * refStats, const value_type * tgtStats,
+                           size_type refDim, size_type tgtDim, size_type corDim
                            ) const -> value_type *;
     // find the locations of the maxima of the correlation matrix
     inline auto _maxcor(const value_type * gamma) const -> int *;

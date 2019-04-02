@@ -469,18 +469,25 @@ template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
 _correlate(const value_type * rArena,
-           const value_type * refStats,
-           const value_type * tgtStats) const -> value_type *
+           const value_type * refStats, const value_type * tgtStats,
+           size_type refDim, size_type tgtDim, size_type corDim) const -> value_type *
 {
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
 
+    // compute the size of the reference tile
+    auto refCells = refDim * refDim;
+    // compute the size of the target tile
+    auto tgtCells = tgtDim * tgtDim;
+    // compute the size of the correlation matrix
+    auto corCells = corDim * corDim;
+
     // pick a spot for the correlation matrix
     value_type * dCorrelation = nullptr;
     // compute the total number of cells in the amplitude hyper-grid
-    auto size = _pairs * _corCells;
+    auto size = _pairs * corCells;
     // and the amount of memory needed to store them
-    auto footprint = _pairs * _corFootprint;
+    auto footprint = size * sizeof(value_type);
     // allocate memory on the device
     auto status = cudaMallocManaged(&dCorrelation, footprint);
     // if something went wrong
@@ -505,17 +512,10 @@ _correlate(const value_type * rArena,
         << dCorrelation
         << pyre::journal::endl;
 
-    // get the dimension of the reference tiles
-    auto refDim = _refLayout.shape()[0];
-    // get the dimension of the target tiles
-    auto tgtDim = _tgtLayout.shape()[0];
-    // get the dimension of the correlation matrix
-    auto corDim = _corLayout.shape()[0];
-
     // engage
     kernels::correlate(rArena, refStats, tgtStats,
                        _pairs,
-                       _refCells, _tgtCells, _corCells, refDim, tgtDim, corDim,
+                       refCells, tgtCells, corCells, refDim, tgtDim, corDim,
                        dCorrelation);
 
     // all done

@@ -223,7 +223,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the average amplitude of all possible ref shaped sub-tiles in the target tile
-    auto gamma = c._correlate(rArena, refStats, tgtStats);
+    auto gamma = c._correlate(rArena, refStats, tgtStats, refDim, tgtDim, corDim);
     // stop the clock
     timer.stop();
     // show me
