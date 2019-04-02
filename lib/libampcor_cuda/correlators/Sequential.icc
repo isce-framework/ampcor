@@ -52,7 +52,7 @@ adjust()
     // move the tiles to the device
     auto coarseArena = _push();
     // compute their amplitudes
-    auto amplitudes = _detect(coarseArena);
+    auto amplitudes = _detect(coarseArena, _refCells, _tgtCells);
     // adjust the reference tiles to zero mean and compute the variances
     auto refStatistics = _refStats(amplitudes);
     // compute the sum area tables for all possible search window placements in the target tile
@@ -75,6 +75,11 @@ adjust()
     _tgtMigrate(coarseArena, maxcor, refinedArena);
     // refine the target tiles
     _tgtRefine(refinedArena);
+
+    // deramp
+    _deramp(refinedArena);
+    // compute amplitudes
+
 
     // clean up
     cudaFree(maxcor);
@@ -277,12 +282,12 @@ _push() const -> cell_type *
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_detect(const cell_type * cArena) const -> value_type *
+_detect(const cell_type * cArena, size_type refCells, size_type tgtCells) const -> value_type *
 {
     // find a spot on the device
     value_type * rArena = nullptr;
     // compute the number of cells whose amplitude we have to compute
-    auto cells = _pairs * (_refCells + _tgtCells);
+    auto cells = _pairs * (refCells + tgtCells);
     // compute the required size
     auto footprint = cells * sizeof(value_type);
     // allocate room for it
@@ -1014,6 +1019,17 @@ _tgtRefine(cell_type * refinedArena) const
     // clean up
     cufftDestroy(revPlan);
 
+    // all done
+    return;
+}
+
+
+// refine the target tiles around the locations of the correlation maxima
+template <typename raster_t>
+void
+ampcor::cuda::correlators::Sequential<raster_t>::
+_deramp(cell_type * arena) const
+{
     // all done
     return;
 }

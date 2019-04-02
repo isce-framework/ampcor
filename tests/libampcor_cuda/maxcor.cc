@@ -13,6 +13,7 @@
 #include <random>
 // cuda
 #include <cuda_runtime.h>
+#include <cufft.h>
 // support
 #include <pyre/grid.h>
 #include <pyre/journal.h>
@@ -173,7 +174,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the amplitude of every pixel
-    auto rArena = c._detect(cArena);
+    auto rArena = c._detect(cArena, refCells, tgtCells);
     // stop the clock
     timer.stop();
     // show me

@@ -13,6 +13,7 @@
 #include <random>
 // cuda
 #include <cuda_runtime.h>
+#include <cufft.h>
 // support
 #include <pyre/grid.h>
 #include <pyre/journal.h>
@@ -38,10 +39,10 @@ int main() {
     // make a timer
     pyre::timer_t timer("ampcor.cuda.sanity");
     // make a channel for reporting the timings
-    pyre::journal::info_t tlog("ampcor.cuda.tlog");
+    pyre::journal::debug_t tlog("ampcor.cuda.tlog");
 
     // make a channel for logging progress
-    pyre::journal::info_t channel("ampcor.cuda");
+    pyre::journal::debug_t channel("ampcor.cuda");
     // show me
     channel
         << pyre::journal::at(__HERE__)
@@ -160,7 +161,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the amplitude of every pixel
-    auto rArena = c._detect(cArena);
+    auto rArena = c._detect(cArena, refCells, tgtCells);
     // stop the clock
     timer.stop();
     // get the duration
