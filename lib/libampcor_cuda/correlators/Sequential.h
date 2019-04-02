@@ -70,7 +70,7 @@ public:
     inline auto _push() const -> cell_type *;
     // compute the magnitude of the complex signal pixel-by-pixel
     inline auto _detect(const cell_type * cArena,
-                        size_type refCells, size_type tgtCells) const -> value_type *;
+                        size_type refDim, size_type tgtDim) const -> value_type *;
     // subtract the mean from reference tiles and compute the square root of their variance
     inline auto _refStats(value_type * rArena) const -> value_type *;
     // compute the sum area tables for the target tiles

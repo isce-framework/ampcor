@@ -282,10 +282,14 @@ _push() const -> cell_type *
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_detect(const cell_type * cArena, size_type refCells, size_type tgtCells) const -> value_type *
+_detect(const cell_type * cArena, size_type refDim, size_type tgtDim) const -> value_type *
 {
     // find a spot on the device
     value_type * rArena = nullptr;
+    // compute the size of a reference tile
+    auto refCells = refDim * refDim;
+    // compute the size of a target tile
+    auto tgtCells = tgtDim * tgtDim;
     // compute the number of cells whose amplitude we have to compute
     auto cells = _pairs * (refCells + tgtCells);
     // compute the required size

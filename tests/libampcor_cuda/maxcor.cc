@@ -174,7 +174,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the amplitude of every pixel
-    auto rArena = c._detect(cArena, refCells, tgtCells);
+    auto rArena = c._detect(cArena, refDim, tgtDim);
     // stop the clock
     timer.stop();
     // show me

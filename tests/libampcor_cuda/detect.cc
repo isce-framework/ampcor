@@ -45,11 +45,11 @@ int main() {
         << pyre::journal::endl;
 
     // the reference tile extent
-    int refExt = 128;
+    int refDim = 128;
     // the margin around the reference tile
     int margin = 32;
     // therefore, the target tile extent
-    auto tgtExt = refExt + 2*margin;
+    auto tgtDim = refDim + 2*margin;
     // the number of possible placements of the reference tile within the target tile
     auto placements = 2*margin + 1;
 
@@ -57,18 +57,18 @@ int main() {
     auto pairs = placements*placements;
 
     // the number of cells in a reference tile
-    auto refCells = refExt * refExt;
+    auto refCells = refDim * refDim;
     // the number of cells in a target tile
-    auto tgtCells = tgtExt * tgtExt;
+    auto tgtCells = tgtDim * tgtDim;
     // the number of cells per pair
     auto cellsPerPair = refCells + tgtCells;
     // the total number of cells
     auto cells = pairs * cellsPerPair;
 
     // the reference shape
-    slc_t::shape_type refShape = {refExt, refExt};
+    slc_t::shape_type refShape = {refDim, refDim};
     // the search window shape
-    slc_t::shape_type tgtShape = {tgtExt, tgtExt};
+    slc_t::shape_type tgtShape = {tgtDim, tgtDim};
 
     // the reference layout with the given shape and default packing
     slc_t::layout_type refLayout = { refShape };
@@ -105,7 +105,7 @@ int main() {
             // fill it with zeroes
             std::fill(tgt.view().begin(), tgt.view().end(), 0);
             // make a slice
-            slc_t::slice_type slice = tgt.layout().slice({i,j}, {i+refExt, j+refExt});
+            slc_t::slice_type slice = tgt.layout().slice({i,j}, {i+refDim, j+refDim});
             // make a view of the tgt tile over this slice
             slc_t::view_type view = tgt.view(slice);
             // fill it with the contents of the reference tile for this pair
@@ -146,7 +146,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the amplitude of every pixel
-    auto rArena = c._detect(cArena, refCells, tgtCells);
+    auto rArena = c._detect(cArena, refDim, tgtDim);
     // stop the clock
     timer.stop();
     // get the duration
@@ -237,18 +237,18 @@ int main() {
 
             channel << "reference:" << pyre::journal::newline;
             // the amplitude of the reference tile
-            for (auto idx=0; idx < refExt; ++idx) {
-                for (auto jdx=0; jdx < refExt; ++jdx) {
-                    channel << results[pid*cellsPerPair + idx*refExt + jdx] << " ";
+            for (auto idx=0; idx < refDim; ++idx) {
+                for (auto jdx=0; jdx < refDim; ++jdx) {
+                    channel << results[pid*cellsPerPair + idx*refDim + jdx] << " ";
                 }
                 channel << pyre::journal::newline;
             }
 
             channel << "target:" << pyre::journal::newline;
             // the amplitude of the reference tile
-            for (auto idx=0; idx < tgtExt; ++idx) {
-                for (auto jdx=0; jdx < tgtExt; ++jdx) {
-                    channel << results[pid*cellsPerPair + refExt*refExt + idx*tgtExt + jdx] << " ";
+            for (auto idx=0; idx < tgtDim; ++idx) {
+                for (auto jdx=0; jdx < tgtDim; ++jdx) {
+                    channel << results[pid*cellsPerPair + refDim*refDim + idx*tgtDim + jdx] << " ";
                 }
                 channel << pyre::journal::newline;
             }
