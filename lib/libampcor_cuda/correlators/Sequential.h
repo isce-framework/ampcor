@@ -90,7 +90,7 @@ public:
     // find the locations of the maxima of the correlation matrix
     inline auto _maxcor(const value_type * gamma, size_type corDim) const -> int *;
     // adjust the locations of the maxima so that the refined tile sources fit with the target
-    inline void _nudge(int * locations) const;
+    inline void _nudge(int * locations, size_type refDim, size_type tgtDim) const;
     // allocate memory for a new arena big enough to hold the refined tiles
     inline auto _refinedArena() const -> cell_type *;
     // refine the reference tiles

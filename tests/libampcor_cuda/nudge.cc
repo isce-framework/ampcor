@@ -54,7 +54,7 @@ int main() {
         << pyre::journal::endl;
 
     // the reference tile extent
-    int refExt = 128;
+    int refDim = 128;
     // the margin around the reference tile
     int margin = 32;
     // the refinement factor
@@ -62,25 +62,25 @@ int main() {
     // the margin around the refined target tile
     int refineMargin = 8;
     // therefore, the target tile extent
-    auto tgtExt = refExt + 2*margin;
+    auto tgtDim = refDim + 2*margin;
     // the number of possible placements of the reference tile within the target tile
     auto placements = 2*margin + 1;
     // the number of pairs
     auto pairs = placements*placements;
 
     // the number of cells in a reference tile
-    auto refCells = refExt * refExt;
+    auto refCells = refDim * refDim;
     // the number of cells in a target tile
-    auto tgtCells = tgtExt * tgtExt;
+    auto tgtCells = tgtDim * tgtDim;
     // the number of cells per pair
     auto cellsPerPair = refCells + tgtCells;
     // the total number of cells
     auto cells = pairs * cellsPerPair;
 
     // the reference shape
-    slc_t::shape_type refShape = {refExt, refExt};
+    slc_t::shape_type refShape = {refDim, refDim};
     // the search window shape
-    slc_t::shape_type tgtShape = {tgtExt, tgtExt};
+    slc_t::shape_type tgtShape = {tgtDim, tgtDim};
     // the reference layout with the given shape and default packing
     slc_t::layout_type refLayout = { refShape };
     // the search window layout with the given shape and default packing
@@ -160,7 +160,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // nudge
-    c._nudge(dloc);
+    c._nudge(dloc, refDim, tgtDim);
     // stop the clock
     timer.stop();
     // show me
@@ -201,7 +201,7 @@ int main() {
     // the lowest possible index
     int low = 0;
     // and the highest possible index
-    int high = tgtExt - (refExt + 2*refineMargin);
+    int high = tgtDim - (refDim + 2*refineMargin);
     // go through the locations
     for (auto pid = 0; pid < pairs; ++pid) {
         // get the row and column

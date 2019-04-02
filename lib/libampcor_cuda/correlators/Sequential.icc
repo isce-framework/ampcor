@@ -576,16 +576,10 @@ _maxcor(const value_type * gamma, size_type corDim) const -> int *
 template <typename raster_t>
 void
 ampcor::cuda::correlators::Sequential<raster_t>::
-_nudge(int * locations) const
+_nudge(int * locations, size_type refDim, size_type tgtDim) const
 {
     // make sure that all locations are adjusted so that they allow enough room for the
-    // {refineMargin}
-
-    // get the dimension of the reference tiles
-    auto refDim = _refLayout.shape()[0];
-    // get the dimension of the target tiles
-    auto tgtDim = _tgtLayout.shape()[0];
-    // move the ULHC of the tiles so they fit
+    // {refineMargin} by moving the ULHC of the tiles so they fit
     kernels::nudge(_pairs, refDim, tgtDim, _refineMargin, locations);
 
     // all done
