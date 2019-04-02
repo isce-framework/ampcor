@@ -176,7 +176,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // subtract the tile mean from each pixel in the reference tile and compute the variance
-    auto refStats = c._refStats(rArena);
+    auto refStats = c._refStats(rArena, refDim, tgtDim);
     // stop the clock
     timer.stop();
     // get the duration

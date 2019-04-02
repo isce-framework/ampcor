@@ -186,7 +186,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute reference tile statistics
-    auto refStats = c._refStats(rArena);
+    auto refStats = c._refStats(rArena, refDim, tgtDim);
     // stop the clock
     timer.stop();
     // show me
