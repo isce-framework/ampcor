@@ -235,7 +235,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // compute the locations of the correlation maxima
-    auto loc = c._maxcor(gamma);
+    auto loc = c._maxcor(gamma, corDim);
     // stop the clock
     timer.stop();
     // show me

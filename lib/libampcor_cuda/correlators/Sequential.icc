@@ -67,9 +67,9 @@ adjust()
     // use the SATs to compute the mean amplitude of all possible window placements
     auto tgtStatistics = _tgtStats(sat, refDim, tgtDim, corDim);
     // compute the correlation hyper-surface
-    auto gamma = _correlate(amplitudes, refStatistics, tgtStatistics);
+    auto gamma = _correlate(amplitudes, refStatistics, tgtStatistics, refDim, tgtDim, corDim);
     // find its maxima
-    auto maxcor = _maxcor(gamma);
+    auto maxcor = _maxcor(gamma, corDim);
     // ensure that the expanded target tiles where the correlation is maximum fit within the
     // search window
     _nudge(maxcor);
@@ -527,10 +527,13 @@ _correlate(const value_type * rArena,
 template <typename raster_t>
 auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-_maxcor(const value_type * gamma) const -> int *
+_maxcor(const value_type * gamma, size_type corDim) const -> int *
 {
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
+
+    // compute the size of the correlation matrix
+    auto corCells = corDim * corDim;
 
     // find a spot
     int * loc = nullptr;
@@ -560,10 +563,8 @@ _maxcor(const value_type * gamma) const -> int *
         << loc
         << pyre::journal::endl;
 
-    // get the dimension of the correlation matrix
-    auto corDim = _corLayout.shape()[0];
     // engage
-    kernels::maxcor(gamma, _pairs, _corCells, corDim, loc);
+    kernels::maxcor(gamma, _pairs, corCells, corDim, loc);
 
     // all done
     return loc;
