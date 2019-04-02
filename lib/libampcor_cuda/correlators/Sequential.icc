@@ -72,7 +72,7 @@ adjust()
     auto maxcor = _maxcor(gamma, corDim);
     // ensure that the expanded target tiles where the correlation is maximum fit within the
     // search window
-    _nudge(maxcor);
+    _nudge(maxcor, refDim, tgtDim);
 
     // allocate room for the refinement area
     auto refinedArena = _refinedArena();
