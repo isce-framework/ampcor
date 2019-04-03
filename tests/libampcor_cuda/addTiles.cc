@@ -10,6 +10,7 @@
 #include <portinfo>
 // cuda
 #include <cuda_runtime.h>
+#include <cufft.h>
 // support
 #include <pyre/grid.h>
 #include <pyre/journal.h>
@@ -43,27 +44,27 @@ int main() {
         << pyre::journal::endl;
 
     // the reference tile extent
-    int refExt = 128;
+    int refDim = 128;
     // the margin around the reference tile
     int margin = 32;
     // therefore, the target tile extent
-    int tgtExt = refExt + 2*margin;
+    int tgtDim = refDim + 2*margin;
     // the number of possible placements of the reference tile within the target tile
     int placements = 2*margin + 1;
     // the number of pairs
     slc_t::size_type pairs = placements*placements;
 
     // the number of cells in a reference tile
-    slc_t::size_type refCells = refExt * refExt;
+    slc_t::size_type refCells = refDim * refDim;
     // the number of cells in a target tile
-    slc_t::size_type tgtCells = tgtExt * tgtExt;
+    slc_t::size_type tgtCells = tgtDim * tgtDim;
     // the number of cells per pair
     slc_t::size_type cellsPerPair = refCells + tgtCells;
 
     // the reference shape
-    slc_t::shape_type refShape = {refExt, refExt};
+    slc_t::shape_type refShape = {refDim, refDim};
     // the search window shape
-    slc_t::shape_type tgtShape = {tgtExt, tgtExt};
+    slc_t::shape_type tgtShape = {tgtDim, tgtDim};
 
     // the reference layout with the given shape and default packing
     slc_t::layout_type refLayout = { refShape };
@@ -100,7 +101,7 @@ int main() {
             // fill it with zeroes
             std::fill(tgt.view().begin(), tgt.view().end(), 0);
             // make a slice
-            slc_t::slice_type slice = tgt.layout().slice({i,j}, {i+refExt, j+refExt});
+            slc_t::slice_type slice = tgt.layout().slice({i,j}, {i+refDim, j+refDim});
             // make a view of the tgt tile over this slice
             slc_t::view_type view = tgt.view(slice);
             // fill it with ones
@@ -108,8 +109,8 @@ int main() {
 
             // show me
             channel << "tgt[" << i << "," << j << "]:" << pyre::journal::newline;
-            for (auto idx=0; idx<tgtExt; ++idx) {
-                for (auto jdx=0; jdx<tgtExt; ++jdx) {
+            for (auto idx=0; idx<tgtDim; ++idx) {
+                for (auto jdx=0; jdx<tgtDim; ++jdx) {
                     channel << tgt[{idx, jdx}] << " ";
                 }
                 channel << pyre::journal::newline;
@@ -142,12 +143,12 @@ int main() {
             // get the reference raster
             auto ref = arena + pid*cellsPerPair;
             // verify its contents
-            for (auto idx=0; idx<refExt; ++idx) {
-                for (auto jdx=0; jdx<refExt; ++jdx) {
+            for (auto idx=0; idx<refDim; ++idx) {
+                for (auto jdx=0; jdx<refDim; ++jdx) {
                     // the expected value
                     pixel_t expected = pid;
                     // the actual value
-                    pixel_t actual = ref[idx*refExt + jdx];
+                    pixel_t actual = ref[idx*refDim + jdx];
                     // compute the mismatch
                     auto mismatch = std::abs(expected-actual)/std::abs(expected);
                     // if there is a mismatch
@@ -170,14 +171,14 @@ int main() {
             // get the target raster
             auto tgt = arena + pid*cellsPerPair + refCells;
             // verify its contents
-            for (auto idx=0; idx<refExt; ++idx) {
-                for (auto jdx=0; jdx<refExt; ++jdx) {
+            for (auto idx=0; idx<refDim; ++idx) {
+                for (auto jdx=0; jdx<refDim; ++jdx) {
                     // the bounds of the copy of the ref tile in the tgt tile
-                    auto within = (idx >= i && idx < i+refExt && jdx >= j && idx < j+refExt);
+                    auto within = (idx >= i && idx < i+refDim && jdx >= j && idx < j+refDim);
                     // the expected value depends on whether we are within the magic subtile
-                    pixel_t expected = within ? ref[idx*refExt + jdx] : 0;
+                    pixel_t expected = within ? ref[idx*refDim + jdx] : 0;
                     // the actual value
-                    pixel_t actual = tgt[idx*tgtExt + jdx];
+                    pixel_t actual = tgt[idx*tgtDim + jdx];
                     // compute the mismatch
                     auto mismatch = std::abs(expected-actual)/std::abs(actual);
                     // if there is a mismatch

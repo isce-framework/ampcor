@@ -8,9 +8,13 @@
 
 // configuration
 #include <portinfo>
+// cuda
+#include <cuda_runtime.h>
+#include <cufft.h>
 // support
 #include <pyre/journal.h>
 #include <pyre/timers.h>
+
 // ampcor
 #include <ampcor_cuda/correlators.h>
 
