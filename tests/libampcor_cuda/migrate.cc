@@ -267,7 +267,7 @@ int main() {
     // start the clock
     timer.reset().start();
     // nudge them
-    c._nudge(dloc);
+    c._nudge(dloc, refDim, tgtDim);
     // stop the clock
     timer.stop();
     // show me
