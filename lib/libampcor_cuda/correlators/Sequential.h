@@ -62,7 +62,8 @@ public:
     inline ~Sequential();
     inline Sequential(size_type pairs,
                       const layout_type & refLayout, const layout_type & tgtLayout,
-                      size_type refineFactor=2, size_type refineMargin=8);
+                      size_type refineFactor=2, size_type refineMargin=8,
+                      size_type zoomFactor=4);
 
     // implementation details: methods
 public:
@@ -100,9 +101,10 @@ public:
                             cell_type * refinedArena) const;
     // refine the target tiles
     inline void _tgtRefine(cell_type * refinedArena) const;
-
     // deramp
     inline void _deramp(cell_type * arena) const;
+    // zoom the correlation matrix
+    inline auto _zoomcor(value_type * gamma) const -> value_type *;
 
 
     // implementation details: data
@@ -111,6 +113,7 @@ private:
     const size_type _pairs;
     const size_type _refineFactor;
     const size_type _refineMargin;
+    const size_type _zoomFactor;
 
     // the shape of the reference tiles
     const layout_type _refLayout;
@@ -122,6 +125,10 @@ private:
     const layout_type _refRefinedLayout;
     // the shape of the target tiles after refinement
     const layout_type _tgtRefinedLayout;
+    // the shape of the correlation matrix after refinement
+    const layout_type _corRefinedLayout;
+    // the shape of the correlation matrix after zooming
+    const layout_type _corZoomedLayout;
 
     // the number of cells in a reference tile
     const size_type _refCells;
