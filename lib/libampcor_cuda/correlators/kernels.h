@@ -60,6 +60,17 @@ namespace ampcor {
                          std::size_t refRefinedDim, std::size_t tgtRefinedDim,
                          const int * locations,
                          std::complex<float> * refinedArena);
+
+            // upcast the correlation matrix into complex numbers and embed in the zoomed
+            // hyper-matrix
+            auto r2c(const float * gamma,
+                     std::size_t pairs, std::size_t corDim, std::size_t zmdDim
+                     ) -> cuComplex *;
+
+            // convert the zoomed correlation matrix to floats
+            auto c2r(const cuComplex * scratch,
+                     std::size_t pairs, std::size_t zmdDim
+                     ) -> float *;
         }
     }
 }

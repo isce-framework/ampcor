@@ -105,6 +105,7 @@ public:
     inline void _deramp(cell_type * arena) const;
     // zoom the correlation matrix
     inline auto _zoomcor(value_type * gamma) const -> value_type *;
+    inline auto _zoomcor_r2r(value_type * gamma) const -> value_type *;
 
 
     // implementation details: data

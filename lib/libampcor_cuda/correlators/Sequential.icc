@@ -1089,6 +1089,194 @@ _zoomcor(value_type * gamma) const -> value_type *
 {
     // constants
     const auto Mb = 1.0 / 1024 / 1024;
+    // make a channel
+    pyre::journal::debug_t channel("ampcor.cuda");
+
+    // get the shape of the incoming correlation matrix
+    auto corShape = _corRefinedLayout.shape();
+    // extract the dimension
+    auto corDim = corShape[0];
+    // get the shape of the zoomed correlation matrix
+    auto zmdShape = _corZoomedLayout.shape();
+    // compute the number if cells in each zoomed correlation matrix
+    auto zmdCells = _corZoomedLayout.size();
+    // extract the dimension
+    auto zmdDim = zmdShape[0];
+
+    // step 1: up-cast and embed
+    auto scratch = kernels::r2c(gamma, _pairs, corDim, zmdDim);
+
+    // step 2: forward FFT from the incoming gamma to the zoomed gamma
+    // the plan characteristics
+    int dim = 2;
+    int fwdRanks[] = { corDim, corDim };
+    // the input layout
+    int fwdIEmbed[] = { zmdDim, zmdDim };
+    // the data is densely packed
+    int fwdIStride = 1;
+    // the distance between correlation matrices
+    int fwdIDist = zmdCells;
+    // the output layout
+    int fwdOEmbed[] = { zmdDim, zmdDim };
+    // the data is densely packed
+    int fwdOStride = 1;
+    // the distance between successive correlation matrices
+    int fwdODist = zmdCells;
+
+    // grab a spot for the forward plan
+    cufftHandle fwdPlan;
+    // instantiate it
+    auto statusFFT = cufftPlanMany(&fwdPlan, dim, fwdRanks,
+                                   fwdIEmbed, fwdIStride, fwdIDist,
+                                   fwdOEmbed, fwdOStride, fwdODist,
+                                   CUFFT_C2C,
+                                   _pairs);
+    // if something went wrong
+    if (statusFFT != CUFFT_SUCCESS) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while zooming the correlation surface: forward FFT plan: error " << statusFFT
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error("while zooming the correlation hyper-matrix: forward plan error");
+    }
+    // show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "zooming the correlation matrix: forward FFT"
+        << pyre::journal::endl;
+    // execute the forward plan
+    statusFFT = cufftExecC2C(fwdPlan, scratch, scratch, CUFFT_FORWARD);
+    // if something went wrong
+    if (statusFFT != CUFFT_SUCCESS) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while zooming the correlation hyper-matrix: executing the forward FFT plan: error "
+            << statusFFT
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error("while executing the forward FFT plan for the reference tiles");
+    }
+    // wait for the device to finish
+    auto status = cudaDeviceSynchronize();
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // form the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t channel("ampcor.cuda");
+        // complain
+        channel
+            << pyre::journal::at(__HERE__)
+            << "while zooming the correlation matrix: STEP 1: " << description
+            << " (" << status << ")"
+            << pyre::journal::endl;
+        // bail
+        throw std::runtime_error(description);
+    }
+    // clean up
+    cufftDestroy(fwdPlan);
+
+    // step 3: inverse FFT of the zero-extended zoomed gamma
+    int revRanks[] = { zmdDim, zmdDim };
+    // the input layout
+    int revIEmbed[] = { zmdDim, zmdDim };
+    // the data is densely packed
+    int revIStride = 1;
+    // the distance between correlation matrices
+    int revIDist = zmdCells;
+    // the output layout
+    int revOEmbed[] = { zmdDim, zmdDim };
+    // the data is densely packed
+    int revOStride = 1;
+    // the distance between successive correlation matrices
+    int revODist = zmdCells;
+
+    // grab a spot for the forward plan
+    cufftHandle revPlan;
+    // instantiate it
+    statusFFT = cufftPlanMany(&revPlan, dim, revRanks,
+                              revIEmbed, revIStride, revIDist,
+                              revOEmbed, revOStride, revODist,
+                              CUFFT_C2C,
+                              _pairs);
+    // if something went wrong
+    if (statusFFT != CUFFT_SUCCESS) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while zooming the correlation surface: forward FFT plan: error " << statusFFT
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error("while zooming the correlation hyper-matrix: forward plan error");
+    }
+    // show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "zooming the correlation matrix: inverse FFT"
+        << pyre::journal::endl;
+    // execute the inverse plan
+    statusFFT = cufftExecC2C(revPlan, scratch, scratch, CUFFT_INVERSE);
+    // if something went wrong
+    if (statusFFT != CUFFT_SUCCESS) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while zooming the correlation hyper-matrix: executing the inverse FFT plan: error "
+            << statusFFT
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error("while executing the inverse FFT plan for the reference tiles");
+    }
+    // wait for the device to finish
+    status = cudaDeviceSynchronize();
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // form the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t channel("ampcor.cuda");
+        // complain
+        channel
+            << pyre::journal::at(__HERE__)
+            << "while zooming the correlation matrix: STEP 2: " << description
+            << " (" << status << ")"
+            << pyre::journal::endl;
+        // bail
+        throw std::runtime_error(description);
+    }
+    // clean up
+    cufftDestroy(revPlan);
+
+    // down-cast
+    auto zoomed = kernels::c2r(scratch, _pairs, zmdDim);
+
+    // clean up
+    cudaFree(scratch);
+
+    // all done
+    return zoomed;
+}
+
+
+// zoom the correlation matrix
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+_zoomcor_r2r(value_type * gamma) const -> value_type *
+{
+    // constants
+    const auto Mb = 1.0 / 1024 / 1024;
 
     // make a channel
     pyre::journal::debug_t channel("ampcor.cuda");
@@ -1109,6 +1297,14 @@ _zoomcor(value_type * gamma) const -> value_type *
     auto cells = zmdDim * (zmdDim/2 + 1);
     // compute the amount of memory needed, including the required padding for C2R
     auto footprint = 2 * cells * _pairs * sizeof(value_type);
+    // show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "allocating "
+        << _pairs << " hermitian " << zmdDim << "x" << zmdDim << " matrices with "
+        << cells << " independent cells," << pyre::journal::newline
+        << "for a total of " << footprint * Mb << " Mb for the zoomed correlation matrix"
+        << pyre::journal::endl;
     // allocate memory for it
     auto status = cudaMallocManaged(&zoomed, footprint);
     // if something went wrong
@@ -1196,7 +1392,7 @@ _zoomcor(value_type * gamma) const -> value_type *
         error
             << pyre::journal::at(__HERE__)
             << "while zooming the correlation hyper-matrix: executing the forward FFT plan: error "
-            << status
+            << statusFFT
             << pyre::journal::endl;
         // and bail
         throw std::runtime_error("while executing the forward FFT plan for the reference tiles");
@@ -1271,7 +1467,7 @@ _zoomcor(value_type * gamma) const -> value_type *
         error
             << pyre::journal::at(__HERE__)
             << "while zooming the correlation hyper-matrix: executing the inverse FFT plan: error "
-            << status
+            << statusFFT
             << pyre::journal::endl;
         // and bail
         throw std::runtime_error("while executing the inverse FFT plan for the reference tiles");
