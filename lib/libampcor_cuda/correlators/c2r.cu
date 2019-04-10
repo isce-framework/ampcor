@@ -11,7 +11,6 @@
 #include <portinfo>
 // STL
 #include <exception>
-#include <complex>
 #include <string>
 // cuda
 #include <cuda_runtime.h>

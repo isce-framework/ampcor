@@ -11,11 +11,9 @@
 #include <portinfo>
 // STL
 #include <exception>
-#include <complex>
 #include <string>
 // cuda
 #include <cuda_runtime.h>
-#include <cuComplex.h>
 // pyre
 #include <pyre/journal.h>
 // local declarations

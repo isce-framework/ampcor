@@ -9,8 +9,6 @@
 
 // configuration
 #include <portinfo>
-// STL
-#include <complex>
 // cuda
 #include <cuda_runtime.h>
 #include <cooperative_groups.h>

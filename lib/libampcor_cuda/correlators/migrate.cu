@@ -9,12 +9,9 @@
 
 // configuration
 #include <portinfo>
-// STL
-#include <complex>
 // pyre
 #include <pyre/journal.h>
 // cuda
-#include <cuComplex.h>
 #include <cuda_runtime.h>
 #include <cooperative_groups.h>
 // pull the declarations
