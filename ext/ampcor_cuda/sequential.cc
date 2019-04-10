@@ -45,11 +45,14 @@ alloc(PyObject *, PyObject *args)
     std::size_t pairs;
     std::size_t refLines, refSamples;
     std::size_t tgtLines, tgtSamples;
+    std::size_t refineMargin, refineFactor, zoomFactor;
     // attempt to parse the arguments
     int ok = PyArg_ParseTuple(args,
-                              "k(kk)(kk):sequential",
+                              "k(kk)(kk)kkk:sequential",
                               &pairs,
-                              &refLines, &refSamples, &tgtLines, &tgtSamples);
+                              &refLines, &refSamples, &tgtLines, &tgtSamples,
+                              &refineMargin, &refineFactor, &zoomFactor
+                              );
     // if something went wrong
     if (!ok) {
         // complain
@@ -63,7 +66,8 @@ alloc(PyObject *, PyObject *args)
 
 
     // instantiate the worker
-    sequential_t * worker = new sequential_t(pairs, ref, tgt);
+    sequential_t * worker = new sequential_t(pairs, ref, tgt,
+                                             refineFactor, refineMargin, zoomFactor);
     // dress it up and return it
     return PyCapsule_New(worker, capsule_t, free);
 }
@@ -245,11 +249,25 @@ adjust(PyObject *, PyObject *args)
         *reinterpret_cast<sequential_t *>(PyCapsule_GetPointer(pyWorker, capsule_t));
 
     // ask the worker to perform pixel level adjustments to the registration map
-    worker.adjust();
+    auto offsets = worker.adjust();
+
+    // get the number of pairs
+    auto pairs = worker.pairs();
+    // crate a new tuple
+    PyObject * results = PyTuple_New(pairs);
+    // go through all the pairs
+    for (auto pid = 0; pid < pairs; ++pid) {
+        // make a doublet
+        PyObject * shift = PyTuple_New(2);
+        // pack the two offets
+        PyTuple_SET_ITEM(shift, 0, PyFloat_FromDouble(offsets[2*pid + 0]));
+        PyTuple_SET_ITEM(shift, 1, PyFloat_FromDouble(offsets[2*pid + 1]));
+        // save the doublet in the results
+        PyTuple_SET_ITEM(results, pid, shift);
+    }
 
     // all done
-    Py_INCREF(Py_None);
-    return Py_None;
+    return results;
 }
 
 // destructors

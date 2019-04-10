@@ -151,6 +151,15 @@ arena() const -> const cell_type *
 }
 
 
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+pairs() const -> size_type
+{
+    return _pairs;
+}
+
+
 // meta-methods
 template <typename raster_t>
 ampcor::cuda::correlators::Sequential<raster_t>::

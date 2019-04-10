@@ -52,6 +52,7 @@ public:
     inline auto adjust() -> const value_type *;
 
     // accessors
+    inline auto pairs() const -> size_type;
     inline auto arena() const -> const cell_type *;
 
     // debugging support
