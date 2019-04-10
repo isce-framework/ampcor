@@ -45,10 +45,13 @@ addTargetTile(size_type pid, const constview_type & tgt)
 
 
 template <typename raster_t>
-void
+auto
 ampcor::cuda::correlators::Sequential<raster_t>::
-adjust()
+adjust() -> const value_type *
 {
+    // make a channel
+    pyre::journal::info_t channel("ampcor.cuda");
+
     // compute the dimension of the reference tiles; assume they are square
     auto refDim = _refLayout.shape()[0];
     // compute the dimension of the target tiles; assume they are square
@@ -120,6 +123,15 @@ adjust()
     // find its maxima
     auto maxcorZoomed = _maxcor(zoomed, corZoomedDim);
 
+    // compute the shifts and return them
+    auto offsets = _offsetField(maxcor, maxcorZoomed);
+
+    // show me
+    channel
+        << pyre::journal::at(__HERE__)
+        << "pair 0: (" << offsets[0] << ", " << offsets[1] << ")"
+        << pyre::journal::endl;
+
     // clean up
     cudaFree(maxcorZoomed);
     cudaFree(maxcor);
@@ -131,7 +143,7 @@ adjust()
     cudaFree(refinedArena);
 
     // all done
-    return;
+    return offsets;
 }
 
 
@@ -151,6 +163,7 @@ ampcor::cuda::correlators::Sequential<raster_t>::
 ~Sequential() {
     // release the host memory
     delete [] _arena;
+    delete [] _offsets;
 }
 
 
@@ -180,7 +193,8 @@ Sequential(size_type pairs,
     _corFootprint{ _corCells * sizeof(value_type) }, // the correlation matrix is real...
     _refRefinedFootprint{ _refRefinedCells * sizeof(cell_type) },
     _tgtRefinedFootprint{ _tgtRefinedCells * sizeof(cell_type) },
-    _arena{ new cell_type[ _pairs * (_refCells+_tgtCells) ] }
+    _arena{ new cell_type[ _pairs * (_refCells+_tgtCells) ] },
+    _offsets{ new value_type[ 2 * _pairs ] }
 {
     // compute the footprints
     auto footprint = _pairs*(_refFootprint + _tgtFootprint);
@@ -1095,13 +1109,13 @@ _zoomcor(value_type * gamma) const -> value_type *
     // get the shape of the incoming correlation matrix
     auto corShape = _corRefinedLayout.shape();
     // extract the dimension
-    auto corDim = corShape[0];
+    int corDim = corShape[0];
     // get the shape of the zoomed correlation matrix
     auto zmdShape = _corZoomedLayout.shape();
     // compute the number if cells in each zoomed correlation matrix
     auto zmdCells = _corZoomedLayout.size();
     // extract the dimension
-    auto zmdDim = zmdShape[0];
+    int zmdDim = zmdShape[0];
 
     // step 1: up-cast and embed
     auto scratch = kernels::r2c(gamma, _pairs, corDim, zmdDim);
@@ -1266,6 +1280,89 @@ _zoomcor(value_type * gamma) const -> value_type *
 
     // all done
     return zoomed;
+}
+
+
+// assemble the offsets
+template <typename raster_t>
+auto
+ampcor::cuda::correlators::Sequential<raster_t>::
+_offsetField(const int * coarse, const int * fine) -> const value_type *
+{
+    // constants
+    const auto Mb = 1.0 / (1024 * 1024);
+    // compute the search margin
+    auto margin = (_tgtLayout.shape()[0] - _refLayout.shape()[0]) / 2;
+    // compute the overall zoom factor
+    auto zoom = _refineFactor * _zoomFactor;
+
+    // compute the number of cells in the offset field
+    auto cells = 2 * _pairs;
+    // and its memory footprint
+    auto footprint = cells * sizeof(value_type);
+    // grab a spot
+    value_type * offsets = nullptr;
+    // allocate memory on the device for the answers
+    auto status = cudaMallocManaged(&offsets, footprint);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while allocating " << footprint * Mb
+            << "Mb of device memory for the offset field: "
+            << cudaGetErrorName(status) << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::bad_alloc();
+    }
+    // zero it out
+    status = cudaMemset(offsets, footprint, 0);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // get the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while initializing " << footprint * Mb
+            << " Mb of device memory for the offset field: "
+            << description << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::runtime_error(description);
+    }
+
+    // launch the kernel that does the work
+    kernels::offsetField(coarse, fine, _pairs, margin, _refineMargin, zoom, offsets);
+
+    // harvest the data
+    status = cudaMemcpy(_offsets, offsets, footprint, cudaMemcpyDeviceToHost);
+    // if something went wrong
+    if (status != cudaSuccess) {
+        // build the error description
+        std::string description = cudaGetErrorName(status);
+        // make a channel
+        pyre::journal::error_t error("ampcor.cuda");
+        // complain
+        error
+            << pyre::journal::at(__HERE__)
+            << "while harvesting the offset field from the device: "
+            << description << " (" << status << ")"
+            << pyre::journal::endl;
+        // and bail
+        throw std::logic_error(description);
+    }
+
+    // clean up
+    cudaFree(offsets);
+
+    // all done
+    return _offsets;
 }
 
 

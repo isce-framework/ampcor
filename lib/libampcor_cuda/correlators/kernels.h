@@ -10,6 +10,10 @@
 #if !defined(ampcor_libampcor_cuda_correlators_kernels_h)
 #define ampcor_libampcor_cuda_correlators_kernels_h
 
+// cuda
+#include <cuComplex.h>
+// STL
+#include <complex>
 
 // forward declarations
 namespace ampcor {
@@ -71,6 +75,12 @@ namespace ampcor {
             auto c2r(const cuComplex * scratch,
                      std::size_t pairs, std::size_t zmdDim
                      ) -> float *;
+
+            // assemble the offset field
+            void offsetField(const int * maxcor, const int * zoomed,
+                             std::size_t pairs,
+                             std::size_t margin, std::size_t refineMargin, std::size_t zoom,
+                             float * field);
         }
     }
 }

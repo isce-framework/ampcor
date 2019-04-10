@@ -44,18 +44,18 @@ public:
     // interface
 public:
     // add a reference tile to the pile
-    void addReferenceTile(size_type pid, const constview_type & ref);
+    inline void addReferenceTile(size_type pid, const constview_type & ref);
     // add a target search window to the pile
-    void addTargetTile(size_type pid, const constview_type & tgt);
+    inline void addTargetTile(size_type pid, const constview_type & tgt);
 
     // compute adjustments to the offset map
-    void adjust();
+    inline auto adjust() -> const value_type *;
 
     // accessors
-    auto arena() const -> const cell_type *;
+    inline auto arena() const -> const cell_type *;
 
     // debugging support
-    void dump() const;
+    inline void dump() const;
 
     // meta-methods
 public:
@@ -105,6 +105,10 @@ public:
     inline void _deramp(cell_type * arena) const;
     // zoom the correlation matrix
     inline auto _zoomcor(value_type * gamma) const -> value_type *;
+    // assemble the offsets
+    inline auto _offsetField(const int * maxcor, const int * zoomed) -> const value_type *;
+
+    // unfinished correlation matrix zoom that uses R2C and C2R
     inline auto _zoomcor_r2r(value_type * gamma) const -> value_type *;
 
 
@@ -155,6 +159,8 @@ private:
 
     // host storage for the tile pairs
     cell_type * const _arena;
+    // host storage for the offset field
+    value_type * const _offsets;
 };
 
 
