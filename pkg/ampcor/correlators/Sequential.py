@@ -19,7 +19,7 @@ class Sequential:
 
 
     # interface
-    def adjust(self, rasters, plan, channel):
+    def adjust(self, manager, rasters, plan, channel):
         """
         Correlate two rasters given a plan
         """

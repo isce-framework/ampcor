@@ -19,7 +19,7 @@ class CUDA:
 
 
     # interface
-    def adjust(self, rasters, plan, channel):
+    def adjust(self, manager, rasters, plan, channel):
         """
         Correlate a pair rasters given a plan
         """
@@ -32,10 +32,17 @@ class CUDA:
         # and the shape of the search windows
         window = plan.window
 
+        # unpack the refinement margin
+        refineMargin = manager.refineMargin
+        # the refinement factor
+        refineFactor = manager.refineFactor
+        # and the zoom factor
+        zoomFactor = manager.zoomFactor
+
         # get the bindings
         libampcor = ampcor.ext.libampcor_cuda
         # make a worker
-        worker = libampcor.sequential(points, chip, window)
+        worker = libampcor.sequential(points, chip, window, refineMargin, refineFactor, zoomFactor)
 
         # show me
         channel.log("loading tiles")
@@ -48,10 +55,10 @@ class CUDA:
 
         channel.log("adjusting the offset map")
         # ask the worker to perform pixel level adjustments
-        libampcor.adjust(worker)
+        offsets = libampcor.adjust(worker)
 
         # all done
-        return
+        return offsets
 
 
     # meta-methods
@@ -63,7 +70,7 @@ class CUDA:
         # get the cuda device manager
         manager = cuda.manager
         # grab a device
-        manager.device()
+        manager.device(did=4)
         # all done
         return
 

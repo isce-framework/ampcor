@@ -33,6 +33,15 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
     padding.default = 32, 32
     padding.doc = "padding around the chip shape to form the search window in the target raster"
 
+    refineMargin = ampcor.properties.int(default=8)
+    refineMargin.doc = "padding around the anti-aliased search window before the fine adjustments"
+
+    refineFactor = ampcor.properties.int(default=2)
+    refineFactor.doc = "anti-aliasing factor for the window with the best coarse correlation"
+
+    zoomFactor = ampcor.properties.int(default=8)
+    zoomFactor.doc = "refinement factor for the fine correlation hyper-matrix"
+
 
     # types
     from .Plan import Plan as newPlan
@@ -79,11 +88,11 @@ class MGA(ampcor.component, family="ampcor.correlators.mga", implements=Correlat
         # restart the timer
         timer.reset().start()
         # make a plan
-        regmap = worker.adjust(rasters=(ref, tgt), plan=plan, channel=channel)
+        regmap = worker.adjust(manager=self, rasters=(ref, tgt), plan=plan, channel=channel)
         # stop the timer
         timer.stop()
         # show me
-        channel.log(f"gross adjustment: {1e3 * timer.read():.3f} ms")
+        channel.log(f"offset field: {1e3 * timer.read():.3f} ms")
 
         # all done
         return 0
