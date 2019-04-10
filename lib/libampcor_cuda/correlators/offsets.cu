@@ -45,7 +45,7 @@ offsetField(const int * coarse,       // the coarse offsets
             )
 {
     // make a channel
-    pyre::journal::info_t channel("ampcor.cuda");
+    pyre::journal::debug_t channel("ampcor.cuda");
 
     // launch blocks of T threads
     auto T = 128;
